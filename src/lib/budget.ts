@@ -116,14 +116,10 @@ export function currentMonthExpensesTotal(expenses: Expense[], today: Date) {
 }
 
 export function fmtPKR(n: number) {
-  const abs = Math.abs(n).toLocaleString("en-PK");
-  return `${n < 0 ? "-" : ""}PKR ${abs}`;
-}
-
-export function fmtK(n: number) {
   const abs = Math.abs(n);
   if (abs < 1000) {
-    return fmtPKR(n);
+    const formatted = abs.toLocaleString("en-PK");
+    return `${n < 0 ? "-" : ""}PKR ${formatted}`;
   }
   if (abs >= 100000) {
     const absLac = abs / 100000;
@@ -131,9 +127,11 @@ export function fmtK(n: number) {
     return `${n < 0 ? "-" : ""}PKR ${formatted} lac`;
   }
   const absK = abs / 1000;
-  const formatted = absK % 1 === 0 ? absK.toFixed(0) : absK.toFixed(1);
+  const formatted = absK % 1 === 0 ? absK.toFixed(0) : absK.toFixed(1).replace(/\.?0+$/, "");
   return `${n < 0 ? "-" : ""}PKR ${formatted}k`;
 }
+
+export const fmtK = fmtPKR;
 
 export function fmtDayLabel(iso: string) {
   const [, m, d] = iso.split("-");
