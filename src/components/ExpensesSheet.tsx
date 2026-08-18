@@ -2,9 +2,9 @@
 
 import { Expense, currentMonthExpensesTotal, fmtDayLabel, fmtPKR, monthDates } from "@/lib/budget";
 
-function TableShell({ children }: { children: React.ReactNode }) {
+function TableShell({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className="overflow-x-auto rounded-md border border-zinc-300 bg-white shadow-2xs">
+    <div className={`overflow-x-auto rounded-md border border-zinc-300 bg-white shadow-2xs ${className}`}>
       {children}
     </div>
   );
@@ -99,7 +99,57 @@ export default function ExpensesSheet({
 
   return (
     <div>
-      <TableShell>
+      {/* Mobile: stacked cards, one per day */}
+      <div className="space-y-3 sm:hidden">
+        {rows.map((e) => (
+          <div
+            key={e.date}
+            className={`rounded-md border p-3 ${
+              e.date === todayIso ? "border-indigo-300 bg-indigo-50/60" : "border-zinc-300 bg-white"
+            }`}
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-sm font-semibold text-zinc-700">{fmtDayLabel(e.date)}</span>
+              <button
+                onClick={() => clearDay(e.date)}
+                aria-label="Clear day"
+                className="cursor-pointer text-zinc-400 hover:text-red-500"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1 text-xs font-medium text-zinc-500">
+                Amount
+                <NumberInput value={e.amount} onChange={(v) => update(e.date, { amount: v })} />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-medium text-zinc-500">
+                Category
+                <TextInput
+                  value={e.category}
+                  list="category-list"
+                  onChange={(v) => update(e.date, { category: v })}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-medium text-zinc-500">
+                Account
+                <TextInput value={e.account} list="account-list" onChange={(v) => update(e.date, { account: v })} />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-medium text-zinc-500">
+                Description
+                <TextInput value={e.description} onChange={(v) => update(e.date, { description: v })} />
+              </label>
+            </div>
+          </div>
+        ))}
+        <div className="rounded-md border border-zinc-300 bg-zinc-100/70 p-3 text-sm font-semibold text-zinc-700">
+          Total — {today.toLocaleString("en-US", { month: "long", year: "numeric" })}:{" "}
+          {fmtPKR(currentMonthExpensesTotal(expenses, today))}
+        </div>
+      </div>
+
+      {/* Desktop / tablet: full table */}
+      <TableShell className="hidden sm:block">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>

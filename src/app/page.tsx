@@ -5,6 +5,7 @@ import BudgetSheet from "@/components/BudgetSheet";
 import ExpensesSheet from "@/components/ExpensesSheet";
 import SettingsPage from "@/components/SettingsPage";
 import FutureSpendingSheet from "@/components/FutureSpendingSheet";
+import PasswordGate from "@/components/PasswordGate";
 import { createClient } from "@/lib/supabase/client";
 import { BudgetData, DEFAULT_BUDGET, computeTotals, fmtPKR, fmtK } from "@/lib/budget";
 
@@ -29,6 +30,7 @@ export default function Home() {
   const [data, setData] = useState<BudgetData>(DEFAULT_BUDGET);
   const [today, setToday] = useState<Date>(SSR_SAFE_TODAY);
   const [tab, setTab] = useState<Tab>("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [status, setStatus] = useState<"loading" | "ready" | "saving" | "saved" | "error" | "no-backend">(
     hasSupabaseConfig ? "loading" : "no-backend",
   );
@@ -122,10 +124,23 @@ export default function Home() {
   ];
 
   return (
+    <PasswordGate>
     <div className="flex min-h-screen bg-[#f8fafc]">
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-30 bg-black/30 sm:hidden"
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="flex w-64 shrink-0 flex-col border-r border-zinc-200 bg-white">
-        <div className="border-b border-zinc-200 px-6 py-5">
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-zinc-200 bg-white transition-transform duration-200 sm:static sm:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-5">
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-600 text-xs font-bold text-white shadow-2xs">
               📊
@@ -135,13 +150,23 @@ export default function Home() {
               <p className="text-xs font-medium text-zinc-500">{data.month}</p>
             </div>
           </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close menu"
+            className="cursor-pointer text-zinc-400 hover:text-zinc-700 sm:hidden"
+          >
+            ✕
+          </button>
         </div>
 
         <nav className="flex-1 space-y-1 p-3">
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => {
+                setTab(t.id);
+                setSidebarOpen(false);
+              }}
               className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3.5 py-2.5 text-left text-sm font-semibold transition-all ${
                 tab === t.id
                   ? "bg-zinc-900 text-white shadow-2xs"
@@ -161,9 +186,20 @@ export default function Home() {
 
       {/* Main content */}
       <main className="min-w-0 flex-1 p-8">
-        <h1 className="mb-6 text-2xl font-bold tracking-tight text-zinc-900">
-          {TABS.find((t) => t.id === tab)?.label}
-        </h1>
+        <div className="mb-6 flex items-center gap-3">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open menu"
+            className="cursor-pointer rounded-md border border-zinc-200 bg-white p-2 text-zinc-600 sm:hidden"
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
+            {TABS.find((t) => t.id === tab)?.label}
+          </h1>
+        </div>
 
         {/* Summary stat cards */}
         {tab !== "settings" && tab !== "future" && (
@@ -204,5 +240,6 @@ export default function Home() {
         {tab === "settings" && <SettingsPage data={data} onDataChange={handleDataChange} />}
       </main>
     </div>
+    </PasswordGate>
   );
 }
