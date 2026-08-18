@@ -181,6 +181,7 @@ export default function Home() {
                 >
                   {c.value}
                 </p>
+                <p className="mt-0.5 text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">PKR</p>
               </div>
             ))}
           </div>
