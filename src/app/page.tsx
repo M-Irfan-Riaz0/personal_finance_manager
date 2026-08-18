@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import BudgetSheet from "@/components/BudgetSheet";
 import ExpensesSheet from "@/components/ExpensesSheet";
 import SettingsPage from "@/components/SettingsPage";
+import FutureSpendingSheet from "@/components/FutureSpendingSheet";
 import { createClient } from "@/lib/supabase/client";
 import { BudgetData, DEFAULT_BUDGET, computeTotals, fmtPKR, fmtK } from "@/lib/budget";
 
@@ -15,11 +16,12 @@ const hasSupabaseConfig =
 // render agree; the real client date is applied after mount (see useEffect below).
 const SSR_SAFE_TODAY = new Date(2026, 7, 18);
 
-type Tab = "overview" | "expenses" | "settings";
+type Tab = "overview" | "expenses" | "future" | "settings";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Budget Overview" },
   { id: "expenses", label: "Daily Expenses" },
+  { id: "future", label: "Future Spending" },
   { id: "settings", label: "Settings" },
 ];
 
@@ -164,7 +166,7 @@ export default function Home() {
         </h1>
 
         {/* Summary stat cards */}
-        {tab !== "settings" && (
+        {tab !== "settings" && tab !== "future" && (
           <div className="mb-8 grid grid-cols-2 gap-4 xl:grid-cols-4">
             {statCards.map((c) => (
               <div
@@ -190,6 +192,12 @@ export default function Home() {
             expenses={data.expenses}
             today={today}
             onExpensesChange={(expenses) => handleDataChange({ ...data, expenses })}
+          />
+        )}
+        {tab === "future" && (
+          <FutureSpendingSheet
+            futureExpenses={data.futureExpenses ?? []}
+            onFutureExpensesChange={(futureExpenses) => handleDataChange({ ...data, futureExpenses })}
           />
         )}
         {tab === "settings" && <SettingsPage data={data} onDataChange={handleDataChange} />}

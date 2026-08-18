@@ -15,6 +15,16 @@ export type MonthlyPlan = {
   minBalanceBuffer: number;
 };
 
+export type FutureExpense = {
+  id: string;
+  title: string;
+  category: string;
+  estimatedAmount: number;
+  dueDate: string;
+  priority: "High" | "Medium" | "Low";
+  status: "Planned" | "Reserved" | "Done";
+};
+
 export type BudgetData = {
   month: string;
   accounts: Account[];
@@ -22,6 +32,7 @@ export type BudgetData = {
   categories: Category[];
   plan: MonthlyPlan;
   expenses: Expense[];
+  futureExpenses?: FutureExpense[];
 };
 
 export const DEFAULT_BUDGET: BudgetData = {
@@ -63,6 +74,10 @@ export const DEFAULT_BUDGET: BudgetData = {
     { date: "2026-08-05", category: "Work & Tools", description: "Claude Subscription", account: "Meezan Bank", amount: 5400 },
     { date: "2026-08-06", category: "Food", description: "Online Food", account: "Meezan Bank", amount: 1500 },
     { date: "2026-08-07", category: "Personal", description: "Clothing", account: "Meezan Bank", amount: 500 },
+  ],
+  futureExpenses: [
+    { id: "1", title: "Internet Bill", category: "Mobile & Internet", estimatedAmount: 3500, dueDate: "2026-08-28", priority: "High", status: "Planned" },
+    { id: "2", title: "Hosting & Domain Renewals", category: "Work & Tools", estimatedAmount: 12000, dueDate: "2026-09-15", priority: "Medium", status: "Planned" },
   ],
 };
 
@@ -166,18 +181,18 @@ export function currentMonthExpensesTotal(expenses: Expense[], today: Date) {
 
 export function fmtPKR(n: number) {
   const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
   if (abs < 1000) {
-    const formatted = abs.toLocaleString("en-PK");
-    return `${n < 0 ? "-" : ""}PKR ${formatted}`;
+    return `${sign}${abs.toLocaleString("en-PK")}`;
   }
   if (abs >= 100000) {
     const absLac = abs / 100000;
     const formatted = absLac % 1 === 0 ? absLac.toFixed(0) : absLac.toFixed(2).replace(/\.?0+$/, "");
-    return `${n < 0 ? "-" : ""}PKR ${formatted} lac`;
+    return `${sign}${formatted} lac`;
   }
   const absK = abs / 1000;
   const formatted = absK % 1 === 0 ? absK.toFixed(0) : absK.toFixed(1).replace(/\.?0+$/, "");
-  return `${n < 0 ? "-" : ""}PKR ${formatted}k`;
+  return `${sign}${formatted}k`;
 }
 
 export const fmtK = fmtPKR;
