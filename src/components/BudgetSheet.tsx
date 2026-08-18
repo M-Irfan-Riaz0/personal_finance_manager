@@ -3,19 +3,31 @@
 import { BudgetData, computeTotals, fmtPKR } from "@/lib/budget";
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="mb-3 text-sm font-semibold text-zinc-900">{children}</h2>;
+  return <h2 className="mb-3 text-sm font-semibold tracking-tight text-zinc-900">{children}</h2>;
 }
 
 function TableShell({ children }: { children: React.ReactNode }) {
-  return <div className="overflow-hidden border border-zinc-200">{children}</div>;
+  return (
+    <div className="overflow-x-auto rounded-md border border-zinc-300 bg-white shadow-2xs">
+      {children}
+    </div>
+  );
 }
 
-function Th({ children, align = "left" }: { children: React.ReactNode; align?: "left" | "right" }) {
+function Th({
+  children,
+  align = "left",
+  className = "",
+}: {
+  children: React.ReactNode;
+  align?: "left" | "right";
+  className?: string;
+}) {
   return (
     <th
-      className={`bg-zinc-50 px-3 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500 ${
+      className={`border-b border-r border-zinc-200 bg-zinc-100/90 px-3.5 py-2.5 text-xs font-semibold uppercase tracking-wider text-zinc-600 last:border-r-0 ${
         align === "right" ? "text-right" : "text-left"
-      }`}
+      } ${className}`}
     >
       {children}
     </th>
@@ -32,7 +44,13 @@ function Td({
   className?: string;
 }) {
   return (
-    <td className={`px-1 py-1 ${align === "right" ? "text-right" : "text-left"} ${className}`}>{children}</td>
+    <td
+      className={`border-b border-r border-zinc-200 px-2 py-1 text-sm last:border-r-0 ${
+        align === "right" ? "text-right" : "text-left"
+      } ${className}`}
+    >
+      {children}
+    </td>
   );
 }
 
@@ -42,24 +60,36 @@ function TextInput({ value, onChange }: { value: string; onChange: (v: string) =
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-2 py-1.5 text-indigo-700 outline-none focus:bg-indigo-50 focus:ring-2 focus:ring-indigo-500"
+      className="w-full rounded-sm px-2.5 py-1 text-sm text-indigo-700 outline-none transition-colors hover:bg-indigo-50/50 focus:bg-indigo-50 focus:ring-2 focus:ring-indigo-500"
     />
   );
 }
 
 function NumberInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const isNegative = value < 0;
   return (
     <input
       type="number"
       value={value}
       onChange={(e) => onChange(e.target.valueAsNumber || 0)}
-      className="w-full px-2 py-1.5 text-right tabular-nums text-indigo-700 outline-none focus:bg-indigo-50 focus:ring-2 focus:ring-indigo-500"
+      className={`w-full rounded-sm px-2.5 py-1 text-right tabular-nums outline-none transition-colors hover:bg-indigo-50/50 focus:bg-indigo-50 focus:ring-2 focus:ring-indigo-500 ${
+        isNegative ? "font-semibold text-rose-600" : "font-medium text-indigo-700"
+      }`}
     />
   );
 }
 
-function Computed({ children }: { children: React.ReactNode }) {
-  return <span className="block px-2 py-1.5 text-right font-semibold tabular-nums text-zinc-900">{children}</span>;
+function Computed({ children, value }: { children: React.ReactNode; value?: number }) {
+  const isNegative = value !== undefined ? value < 0 : false;
+  return (
+    <span
+      className={`block px-2.5 py-1 text-right font-semibold tabular-nums ${
+        isNegative ? "text-rose-600" : "text-zinc-900"
+      }`}
+    >
+      {children}
+    </span>
+  );
 }
 
 export default function BudgetSheet({
