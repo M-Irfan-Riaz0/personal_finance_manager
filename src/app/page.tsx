@@ -113,7 +113,7 @@ export default function Home() {
       isNegative: totals.peopleTotalRemaining < 0,
     },
     {
-      label: "Safe to spend now",
+      label: "Available Savings",
       value: fmtK(totals.safeToSpendNow),
       isNegative: totals.safeToSpendNow < 0,
     },

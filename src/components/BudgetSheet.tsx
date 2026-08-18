@@ -261,13 +261,13 @@ export default function BudgetSheet({
                   </Td>
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
-                  <Td className="text-zinc-600">Safe to spend now</Td>
+                  <Td className="text-zinc-600">Available Savings</Td>
                   <Td className="w-32 sm:w-36">
                     <Computed value={t.safeToSpendNow}>{fmtPKR(t.safeToSpendNow)}</Computed>
                   </Td>
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
-                  <Td className="text-zinc-600">Safe to spend per day</Td>
+                  <Td className="text-zinc-600">Daily Expense Ceiling</Td>
                   <Td className="w-32 sm:w-36">
                     <Computed value={t.safeToSpendPerDay}>{fmtPKR(t.safeToSpendPerDay)} / day</Computed>
                   </Td>
