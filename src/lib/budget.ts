@@ -13,6 +13,7 @@ export type MonthlyPlan = {
   monthlySpendingBudget: number;
   weeklySpendingLimit: number;
   minBalanceBuffer: number;
+  personalSpendingCap?: number;
 };
 
 export type FutureExpense = {
@@ -65,6 +66,7 @@ export const DEFAULT_BUDGET: BudgetData = {
     monthlySpendingBudget: 30000,
     weeklySpendingLimit: 7500,
     minBalanceBuffer: 5000,
+    personalSpendingCap: 5000,
   },
   expenses: [
     { date: "2026-08-01", category: "Other", description: "Money given to Ghazi", account: "Meezan Bank", amount: 10000 },
@@ -156,6 +158,12 @@ export function computeTotals(data: BudgetData, today: Date) {
     .filter((e) => e.date >= isoDate(weekAgo.getFullYear(), weekAgo.getMonth(), weekAgo.getDate()) && e.date <= isoDate(today.getFullYear(), today.getMonth(), today.getDate()))
     .reduce((s, e) => s + e.amount, 0);
 
+  const personalSpent = data.expenses
+    .filter((e) => !isGivenMoney(e) && (e.category.trim().toLowerCase() === "personal" || e.category.trim().toLowerCase() === "food"))
+    .reduce((s, e) => s + e.amount, 0);
+  const personalCap = data.plan.personalSpendingCap ?? 5000;
+  const personalCapRemaining = personalCap - personalSpent;
+
   return {
     accountsComputed,
     categoriesComputed,
@@ -170,6 +178,9 @@ export function computeTotals(data: BudgetData, today: Date) {
     budgetDifference,
     daysLeftInMonth: daysLeft,
     spentThisWeek,
+    personalSpent,
+    personalCap,
+    personalCapRemaining,
   };
 }
 

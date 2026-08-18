@@ -181,6 +181,13 @@ export default function SettingsPage({
             onChange={(e) => updatePlan({ minBalanceBuffer: Number(e.target.value) || 0 })}
             placeholder="0"
           />
+          <Input
+            label="Personal Spending Cap (Max Self)"
+            type="number"
+            value={data.plan.personalSpendingCap || ""}
+            onChange={(e) => updatePlan({ personalSpendingCap: Number(e.target.value) || 0 })}
+            placeholder="5000"
+          />
         </div>
       </Card>
 
