@@ -120,6 +120,21 @@ export function fmtPKR(n: number) {
   return `${n < 0 ? "-" : ""}PKR ${abs}`;
 }
 
+export function fmtK(n: number) {
+  const abs = Math.abs(n);
+  if (abs < 1000) {
+    return fmtPKR(n);
+  }
+  if (abs >= 100000) {
+    const absLac = abs / 100000;
+    const formatted = absLac % 1 === 0 ? absLac.toFixed(0) : absLac.toFixed(2).replace(/\.?0+$/, "");
+    return `${n < 0 ? "-" : ""}PKR ${formatted} lac`;
+  }
+  const absK = abs / 1000;
+  const formatted = absK % 1 === 0 ? absK.toFixed(0) : absK.toFixed(1);
+  return `${n < 0 ? "-" : ""}PKR ${formatted}k`;
+}
+
 export function fmtDayLabel(iso: string) {
   const [, m, d] = iso.split("-");
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

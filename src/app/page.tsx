@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import BudgetSheet from "@/components/BudgetSheet";
 import ExpensesSheet from "@/components/ExpensesSheet";
+import SettingsPage from "@/components/SettingsPage";
 import { createClient } from "@/lib/supabase/client";
-import { BudgetData, DEFAULT_BUDGET, computeTotals, fmtPKR } from "@/lib/budget";
+import { BudgetData, DEFAULT_BUDGET, computeTotals, fmtPKR, fmtK } from "@/lib/budget";
 
 const SHEET_ID = "default";
 const hasSupabaseConfig =
@@ -14,11 +15,12 @@ const hasSupabaseConfig =
 // render agree; the real client date is applied after mount (see useEffect below).
 const SSR_SAFE_TODAY = new Date(2026, 7, 18);
 
-type Tab = "overview" | "expenses";
+type Tab = "overview" | "expenses" | "settings";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Budget Overview" },
   { id: "expenses", label: "Daily Expenses" },
+  { id: "settings", label: "Settings" },
 ];
 
 export default function Home() {
@@ -97,27 +99,23 @@ export default function Home() {
   const statCards = [
     {
       label: "Money in accounts",
-      value: fmtPKR(totals.accountsTotalCurrent),
-      color: totals.accountsTotalCurrent < 0 ? "text-rose-600" : "text-emerald-700",
-      dot: "bg-emerald-500",
+      value: fmtK(totals.accountsTotalCurrent),
+      isNegative: totals.accountsTotalCurrent < 0,
     },
     {
       label: "Spent this month",
-      value: fmtPKR(totals.spentThisMonth),
-      color: "text-amber-700",
-      dot: "bg-amber-500",
+      value: fmtK(totals.spentThisMonth),
+      isNegative: false,
     },
     {
       label: "Still owed to me",
-      value: fmtPKR(totals.peopleTotalRemaining),
-      color: "text-teal-700",
-      dot: "bg-teal-500",
+      value: fmtK(totals.peopleTotalRemaining),
+      isNegative: totals.peopleTotalRemaining < 0,
     },
     {
       label: "Estimated net worth",
-      value: fmtPKR(totals.estimatedNetWorth),
-      color: totals.estimatedNetWorth < 0 ? "text-rose-600" : "text-indigo-700",
-      dot: "bg-indigo-500",
+      value: fmtK(totals.estimatedNetWorth),
+      isNegative: totals.estimatedNetWorth < 0,
     },
   ];
 
@@ -166,20 +164,25 @@ export default function Home() {
         </h1>
 
         {/* Summary stat cards */}
-        <div className="mb-8 grid grid-cols-2 gap-4 xl:grid-cols-4">
-          {statCards.map((c) => (
-            <div
-              key={c.label}
-              className="rounded-lg border border-zinc-200 bg-white px-5 py-4 shadow-2xs transition-all hover:shadow-xs"
-            >
-              <div className="flex items-center justify-between">
+        {tab !== "settings" && (
+          <div className="mb-8 grid grid-cols-2 gap-4 xl:grid-cols-4">
+            {statCards.map((c) => (
+              <div
+                key={c.label}
+                className="rounded-lg border border-zinc-200 bg-white px-5 py-4 shadow-2xs transition-all hover:shadow-xs"
+              >
                 <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">{c.label}</p>
-                <span className={`h-2 w-2 rounded-full ${c.dot}`} />
+                <p
+                  className={`mt-2 text-2xl font-bold tracking-tight ${
+                    c.isNegative ? "text-rose-600" : "text-zinc-900"
+                  }`}
+                >
+                  {c.value}
+                </p>
               </div>
-              <p className={`mt-2 text-2xl font-bold tracking-tight ${c.color}`}>{c.value}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {tab === "overview" && <BudgetSheet data={data} today={today} onDataChange={handleDataChange} />}
         {tab === "expenses" && (
@@ -189,6 +192,7 @@ export default function Home() {
             onExpensesChange={(expenses) => handleDataChange({ ...data, expenses })}
           />
         )}
+        {tab === "settings" && <SettingsPage data={data} onDataChange={handleDataChange} />}
       </main>
     </div>
   );
