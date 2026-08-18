@@ -295,38 +295,81 @@ export default function BudgetSheet({
         </div>
       </div>
 
-      {/* Daily Spending */}
+      {/* Daily Spending Graph */}
       <div>
-        <SectionTitle>Daily Spending — {data.month}</SectionTitle>
-        <TableShell>
-          <div className="max-h-80 overflow-y-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead className="sticky top-0">
-                <tr>
-                  <Th className="w-28 sm:w-32">Day</Th>
-                  <Th align="right" className="w-32 sm:w-40">Spending</Th>
-                  <Th>{""}</Th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {monthDates(today).map((iso) => {
-                  const daySpending = data.expenses
-                    .filter((e) => e.date === iso)
-                    .reduce((s, e) => s + e.amount, 0);
-                  return (
-                    <tr key={iso} className="odd:bg-white even:bg-zinc-50/50 hover:bg-indigo-50/40">
-                      <Td className="w-28 sm:w-32 font-medium text-zinc-600">{fmtDayLabel(iso)}</Td>
-                      <Td className="w-32 sm:w-40">
-                        <Computed value={daySpending}>{daySpending > 0 ? fmtPKR(daySpending) : "—"}</Computed>
-                      </Td>
-                      <Td />
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        <SectionTitle>Daily Spending Overview — {data.month}</SectionTitle>
+        <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-2xs">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-zinc-500">Visual breakdown of daily transactions throughout {data.month}</p>
+            </div>
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-xs bg-indigo-600" />
+                <span className="text-zinc-600">Major Spend (&gt;5k)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-xs bg-indigo-400" />
+                <span className="text-zinc-600">Regular Spend</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-xs bg-zinc-200" />
+                <span className="text-zinc-400">No Spend</span>
+              </div>
+            </div>
           </div>
-        </TableShell>
+
+          {(() => {
+            const dates = monthDates(today);
+            const dailyData = dates.map((iso) => {
+              const total = data.expenses
+                .filter((e) => e.date === iso)
+                .reduce((s, e) => s + e.amount, 0);
+              const dayNum = iso.split("-")[2];
+              return { iso, dayNum, total, formatted: total > 0 ? fmtPKR(total) : "0" };
+            });
+            const maxSpend = Math.max(...dailyData.map((d) => d.total), 1000);
+
+            return (
+              <div className="relative h-44 w-full pt-6 pb-2">
+                <div className="flex h-full items-end gap-1 sm:gap-1.5 overflow-x-auto">
+                  {dailyData.map((d) => {
+                    const heightPercent = d.total > 0 ? Math.max((d.total / maxSpend) * 100, 10) : 4;
+                    const isHigh = d.total >= 5000;
+                    return (
+                      <div
+                        key={d.iso}
+                        className="group relative flex flex-1 flex-col items-center h-full justify-end min-w-[18px]"
+                      >
+                        {/* Hover Tooltip */}
+                        {d.total > 0 && (
+                          <div className="absolute -top-8 z-20 hidden rounded bg-zinc-900 px-2 py-1 text-[11px] font-semibold text-white group-hover:block whitespace-nowrap shadow-md">
+                            {d.dayNum} Aug: {d.formatted}
+                          </div>
+                        )}
+                        {/* Bar */}
+                        <div
+                          style={{ height: `${heightPercent}%` }}
+                          className={`w-full rounded-t transition-all duration-200 ${
+                            d.total > 0
+                              ? isHigh
+                                ? "bg-indigo-600 group-hover:bg-indigo-700"
+                                : "bg-indigo-400 group-hover:bg-indigo-500"
+                              : "bg-zinc-100 group-hover:bg-zinc-200"
+                          }`}
+                        />
+                        {/* Day label */}
+                        <span className="mt-2 text-[10px] font-mono text-zinc-400">
+                          {d.dayNum}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
       </div>
 
       {/* Legend */}
