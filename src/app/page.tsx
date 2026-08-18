@@ -102,22 +102,44 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f7f7f8] py-8 px-4 sm:px-8">
-      <div className="mx-auto w-full max-w-6xl">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Personal Budget</h1>
-            <p className="text-sm text-zinc-500">{data.month}</p>
-          </div>
-          <div className="flex items-center gap-2 border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-500">
-            <span className={`h-2 w-2 ${statusDot}`} />
-            {statusLabel}
-          </div>
+    <div className="flex min-h-screen bg-[#f7f7f8]">
+      {/* Sidebar */}
+      <aside className="flex w-60 shrink-0 flex-col border-r border-zinc-200 bg-white">
+        <div className="border-b border-zinc-200 px-5 py-5">
+          <p className="text-sm font-semibold tracking-tight text-zinc-900">Personal Budget</p>
+          <p className="text-xs text-zinc-500">{data.month}</p>
         </div>
 
+        <nav className="flex-1 space-y-1 p-3">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`block w-full cursor-pointer border-l-2 px-3 py-2 text-left text-sm font-medium transition-colors ${
+                tab === t.id
+                  ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                  : "border-transparent text-zinc-600 hover:bg-zinc-50"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-2 border-t border-zinc-200 px-5 py-4 text-xs font-medium text-zinc-500">
+          <span className={`h-2 w-2 ${statusDot}`} />
+          {statusLabel}
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <main className="min-w-0 flex-1 p-8">
+        <h1 className="mb-6 text-2xl font-semibold tracking-tight text-zinc-900">
+          {TABS.find((t) => t.id === tab)?.label}
+        </h1>
+
         {/* Summary stat cards */}
-        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="mb-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
           {statCards.map((c) => (
             <div key={c.label} className="border border-zinc-200 bg-white px-4 py-4">
               <p className="text-xs font-medium text-zinc-500">{c.label}</p>
@@ -126,33 +148,14 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Tabs */}
-        <div className="mb-4 flex gap-6 border-b border-zinc-200">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`relative -mb-px cursor-pointer pb-3 text-sm font-medium transition-colors ${
-                tab === t.id ? "text-indigo-600" : "text-zinc-500 hover:text-zinc-800"
-              }`}
-            >
-              {t.label}
-              {tab === t.id && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-indigo-600" />}
-            </button>
-          ))}
-        </div>
-
-        {/* Content card */}
-        <div className="overflow-hidden border border-zinc-200 bg-white">
-          {tab === "overview" && <BudgetSheet data={data} today={today} onDataChange={handleDataChange} />}
-          {tab === "expenses" && (
-            <ExpensesSheet
-              expenses={data.expenses}
-              onExpensesChange={(expenses) => handleDataChange({ ...data, expenses })}
-            />
-          )}
-        </div>
-      </div>
+        {tab === "overview" && <BudgetSheet data={data} today={today} onDataChange={handleDataChange} />}
+        {tab === "expenses" && (
+          <ExpensesSheet
+            expenses={data.expenses}
+            onExpensesChange={(expenses) => handleDataChange({ ...data, expenses })}
+          />
+        )}
+      </main>
     </div>
   );
 }
