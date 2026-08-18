@@ -99,28 +99,24 @@ export default function Home() {
       label: "Money in accounts",
       value: fmtPKR(totals.accountsTotalCurrent),
       color: totals.accountsTotalCurrent < 0 ? "text-rose-600" : "text-emerald-700",
-      bg: "bg-emerald-50/50 border-emerald-100",
       dot: "bg-emerald-500",
     },
     {
       label: "Spent this month",
       value: fmtPKR(totals.spentThisMonth),
       color: "text-amber-700",
-      bg: "bg-amber-50/40 border-amber-100",
       dot: "bg-amber-500",
     },
     {
       label: "Still owed to me",
       value: fmtPKR(totals.peopleTotalRemaining),
       color: "text-teal-700",
-      bg: "bg-teal-50/40 border-teal-100",
       dot: "bg-teal-500",
     },
     {
       label: "Estimated net worth",
       value: fmtPKR(totals.estimatedNetWorth),
       color: totals.estimatedNetWorth < 0 ? "text-rose-600" : "text-indigo-700",
-      bg: "bg-indigo-50/40 border-indigo-100",
       dot: "bg-indigo-500",
     },
   ];
@@ -141,19 +137,18 @@ export default function Home() {
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1.5 p-3">
+        <nav className="flex-1 space-y-1 p-3">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex w-full cursor-pointer items-center justify-between rounded-md border-l-3 px-3.5 py-2.5 text-left text-sm font-semibold transition-all ${
+              className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3.5 py-2.5 text-left text-sm font-semibold transition-all ${
                 tab === t.id
-                  ? "border-emerald-600 bg-emerald-50/80 text-emerald-800 shadow-2xs"
-                  : "border-transparent text-zinc-600 hover:bg-zinc-100/80 hover:text-zinc-900"
+                  ? "bg-zinc-900 text-white shadow-2xs"
+                  : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
               }`}
             >
               <span>{t.label}</span>
-              {tab === t.id && <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />}
             </button>
           ))}
         </nav>
@@ -175,7 +170,7 @@ export default function Home() {
           {statCards.map((c) => (
             <div
               key={c.label}
-              className={`rounded-lg border px-5 py-4 shadow-2xs transition-all hover:shadow-xs ${c.bg}`}
+              className="rounded-lg border border-zinc-200 bg-white px-5 py-4 shadow-2xs transition-all hover:shadow-xs"
             >
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">{c.label}</p>
@@ -190,6 +185,7 @@ export default function Home() {
         {tab === "expenses" && (
           <ExpensesSheet
             expenses={data.expenses}
+            today={today}
             onExpensesChange={(expenses) => handleDataChange({ ...data, expenses })}
           />
         )}

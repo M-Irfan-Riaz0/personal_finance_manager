@@ -1,9 +1,8 @@
 export type Account = { name: string; starting: number; current: number };
 export type Person = { name: string; owed: number; received: number };
 export type Category = { name: string; actual: number };
-export type DailyEntry = { day: string; spending: number };
 export type Expense = {
-  date: string;
+  date: string; // ISO date, YYYY-MM-DD
   category: string;
   description: string;
   account: string;
@@ -21,7 +20,6 @@ export type BudgetData = {
   accounts: Account[];
   people: Person[];
   categories: Category[];
-  daily: DailyEntry[];
   plan: MonthlyPlan;
   expenses: Expense[];
 };
@@ -46,14 +44,6 @@ export const DEFAULT_BUDGET: BudgetData = {
     { name: "Personal", actual: 5000 },
     { name: "Other", actual: 0 },
   ],
-  daily: Array.from({ length: 31 }, (_, i) => {
-    const day = i + 1;
-    const spendingByDay: Record<number, number> = { 7: 550, 8: 5450, 11: 10000 };
-    return {
-      day: `${String(day).padStart(2, "0")} Aug`,
-      spending: spendingByDay[day] ?? 0,
-    };
-  }),
   plan: {
     incomeReceived: 0,
     monthlySpendingBudget: 0,
@@ -61,14 +51,32 @@ export const DEFAULT_BUDGET: BudgetData = {
     minBalanceBuffer: 0,
   },
   expenses: [
-    { date: "07 Aug", category: "Food", description: "Groceries", account: "Cash", amount: 550 },
-    { date: "08 Aug", category: "Personal", description: "Shopping", account: "Cash", amount: 5450 },
-    { date: "11 Aug", category: "Transport", description: "Fuel", account: "JazzCash", amount: 10000 },
+    { date: "2026-08-07", category: "Food", description: "Groceries", account: "Cash", amount: 550 },
+    { date: "2026-08-08", category: "Personal", description: "Shopping", account: "Cash", amount: 5450 },
+    { date: "2026-08-11", category: "Transport", description: "Fuel", account: "JazzCash", amount: 10000 },
   ],
 };
 
+export function isoDate(year: number, month: number, day: number) {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+export function daysInMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+}
+
+/** All ISO dates (YYYY-MM-DD) for the calendar month containing `date`. */
+export function monthDates(date: Date): string[] {
+  const count = daysInMonth(date);
+  return Array.from({ length: count }, (_, i) => isoDate(date.getFullYear(), date.getMonth(), i + 1));
+}
+
 export function expensesTotal(expenses: Expense[]) {
   return expenses.reduce((s, e) => s + e.amount, 0);
+}
+
+function monthKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export function computeTotals(data: BudgetData, today: Date) {
@@ -80,15 +88,13 @@ export function computeTotals(data: BudgetData, today: Date) {
   const safeToSpendNow = accountsTotalCurrent - data.plan.minBalanceBuffer;
   const budgetDifference = data.plan.monthlySpendingBudget - spentThisMonth;
 
-  const daysInMonth = data.daily.length;
-  const todayDay = today.getDate();
-  const currentDayIndex = Math.min(todayDay, daysInMonth);
-  const daysLeftInMonth = Math.max(daysInMonth - currentDayIndex, 0);
+  const daysLeftInMonth = Math.max(daysInMonth(today) - today.getDate(), 0);
 
-  const weekStart = Math.max(currentDayIndex - 6, 1);
-  const spentThisWeek = data.daily
-    .slice(weekStart - 1, currentDayIndex)
-    .reduce((s, d) => s + d.spending, 0);
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 6);
+  const spentThisWeek = data.expenses
+    .filter((e) => e.date >= isoDate(weekAgo.getFullYear(), weekAgo.getMonth(), weekAgo.getDate()) && e.date <= isoDate(today.getFullYear(), today.getMonth(), today.getDate()))
+    .reduce((s, e) => s + e.amount, 0);
 
   return {
     accountsTotalStarting,
@@ -103,7 +109,19 @@ export function computeTotals(data: BudgetData, today: Date) {
   };
 }
 
+/** Sum of expenses logged within the calendar month containing `today`. */
+export function currentMonthExpensesTotal(expenses: Expense[], today: Date) {
+  const key = monthKey(today);
+  return expenses.filter((e) => e.date.startsWith(key)).reduce((s, e) => s + e.amount, 0);
+}
+
 export function fmtPKR(n: number) {
   const abs = Math.abs(n).toLocaleString("en-PK");
   return `${n < 0 ? "-" : ""}PKR ${abs}`;
+}
+
+export function fmtDayLabel(iso: string) {
+  const [, m, d] = iso.split("-");
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${d} ${months[Number(m) - 1]}`;
 }

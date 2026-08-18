@@ -1,6 +1,6 @@
 "use client";
 
-import { BudgetData, computeTotals, fmtPKR } from "@/lib/budget";
+import { BudgetData, computeTotals, fmtPKR, monthDates, fmtDayLabel } from "@/lib/budget";
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="mb-3 text-sm font-semibold tracking-tight text-zinc-900">{children}</h2>;
@@ -115,10 +115,6 @@ export default function BudgetSheet({
     const categories = data.categories.map((c, i) => (i === index ? { ...c, ...patch } : c));
     onDataChange({ ...data, categories });
   }
-  function updateDaily(index: number, spending: number) {
-    const daily = data.daily.map((d, i) => (i === index ? { ...d, spending } : d));
-    onDataChange({ ...data, daily });
-  }
   function updatePlan(patch: Partial<BudgetData["plan"]>) {
     onDataChange({ ...data, plan: { ...data.plan, ...patch } });
   }
@@ -134,8 +130,8 @@ export default function BudgetSheet({
               <thead>
                 <tr>
                   <Th>Account</Th>
-                  <Th align="right">Starting</Th>
-                  <Th align="right">Current</Th>
+                  <Th align="right" className="w-28 sm:w-32">Starting</Th>
+                  <Th align="right" className="w-28 sm:w-32">Current</Th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -144,20 +140,20 @@ export default function BudgetSheet({
                     <Td>
                       <TextInput value={a.name} onChange={(v) => updateAccount(i, { name: v })} />
                     </Td>
-                    <Td>
+                    <Td className="w-28 sm:w-32">
                       <NumberInput value={a.starting} onChange={(v) => updateAccount(i, { starting: v })} />
                     </Td>
-                    <Td>
+                    <Td className="w-28 sm:w-32">
                       <NumberInput value={a.current} onChange={(v) => updateAccount(i, { current: v })} />
                     </Td>
                   </tr>
                 ))}
                 <tr className="border-t border-zinc-200 bg-zinc-50 font-medium">
                   <Td className="py-2 text-sm font-semibold text-zinc-700">Total</Td>
-                  <Td>
+                  <Td className="w-28 sm:w-32">
                     <Computed value={t.accountsTotalStarting}>{fmtPKR(t.accountsTotalStarting)}</Computed>
                   </Td>
-                  <Td>
+                  <Td className="w-28 sm:w-32">
                     <Computed value={t.accountsTotalCurrent}>{fmtPKR(t.accountsTotalCurrent)}</Computed>
                   </Td>
                 </tr>
@@ -173,9 +169,9 @@ export default function BudgetSheet({
               <thead>
                 <tr>
                   <Th>Person</Th>
-                  <Th align="right">Owed</Th>
-                  <Th align="right">Received</Th>
-                  <Th align="right">Remaining</Th>
+                  <Th align="right" className="w-24 sm:w-28">Owed</Th>
+                  <Th align="right" className="w-24 sm:w-28">Received</Th>
+                  <Th align="right" className="w-28 sm:w-32">Remaining</Th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -184,22 +180,22 @@ export default function BudgetSheet({
                     <Td>
                       <TextInput value={p.name} onChange={(v) => updatePerson(i, { name: v })} />
                     </Td>
-                    <Td>
+                    <Td className="w-24 sm:w-28">
                       <NumberInput value={p.owed} onChange={(v) => updatePerson(i, { owed: v })} />
                     </Td>
-                    <Td>
+                    <Td className="w-24 sm:w-28">
                       <NumberInput value={p.received} onChange={(v) => updatePerson(i, { received: v })} />
                     </Td>
-                    <Td>
+                    <Td className="w-28 sm:w-32">
                       <Computed value={p.owed - p.received}>{fmtPKR(p.owed - p.received)}</Computed>
                     </Td>
                   </tr>
                 ))}
                 <tr className="border-t border-zinc-200 bg-zinc-50 font-medium">
                   <Td className="py-2 text-sm font-semibold text-zinc-700">Total</Td>
-                  <Td />
-                  <Td />
-                  <Td>
+                  <Td className="w-24 sm:w-28" />
+                  <Td className="w-24 sm:w-28" />
+                  <Td className="w-28 sm:w-32">
                     <Computed value={t.peopleTotalRemaining}>{fmtPKR(t.peopleTotalRemaining)}</Computed>
                   </Td>
                 </tr>
@@ -218,7 +214,7 @@ export default function BudgetSheet({
               <tbody className="divide-y divide-zinc-100">
                 <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Income received</Td>
-                  <Td className="w-32">
+                  <Td className="w-32 sm:w-36">
                     <NumberInput
                       value={data.plan.incomeReceived}
                       onChange={(v) => updatePlan({ incomeReceived: v })}
@@ -227,7 +223,7 @@ export default function BudgetSheet({
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Monthly spending budget</Td>
-                  <Td className="w-32">
+                  <Td className="w-32 sm:w-36">
                     <NumberInput
                       value={data.plan.monthlySpendingBudget}
                       onChange={(v) => updatePlan({ monthlySpendingBudget: v })}
@@ -236,7 +232,7 @@ export default function BudgetSheet({
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Weekly spending limit</Td>
-                  <Td className="w-32">
+                  <Td className="w-32 sm:w-36">
                     <NumberInput
                       value={data.plan.weeklySpendingLimit}
                       onChange={(v) => updatePlan({ weeklySpendingLimit: v })}
@@ -245,19 +241,19 @@ export default function BudgetSheet({
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Actual spending</Td>
-                  <Td className="w-32">
+                  <Td className="w-32 sm:w-36">
                     <Computed value={t.spentThisMonth}>{fmtPKR(t.spentThisMonth)}</Computed>
                   </Td>
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Spent this week</Td>
-                  <Td className="w-32">
+                  <Td className="w-32 sm:w-36">
                     <Computed value={t.spentThisWeek}>{fmtPKR(t.spentThisWeek)}</Computed>
                   </Td>
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Minimum balance buffer</Td>
-                  <Td className="w-32">
+                  <Td className="w-32 sm:w-36">
                     <NumberInput
                       value={data.plan.minBalanceBuffer}
                       onChange={(v) => updatePlan({ minBalanceBuffer: v })}
@@ -266,19 +262,19 @@ export default function BudgetSheet({
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Safe to spend now</Td>
-                  <Td className="w-32">
+                  <Td className="w-32 sm:w-36">
                     <Computed value={t.safeToSpendNow}>{fmtPKR(t.safeToSpendNow)}</Computed>
                   </Td>
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Budget difference</Td>
-                  <Td className="w-32">
+                  <Td className="w-32 sm:w-36">
                     <Computed value={t.budgetDifference}>{fmtPKR(t.budgetDifference)}</Computed>
                   </Td>
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Days left in month</Td>
-                  <Td className="w-32">
+                  <Td className="w-32 sm:w-36">
                     <Computed>{t.daysLeftInMonth} days</Computed>
                   </Td>
                 </tr>
@@ -294,7 +290,7 @@ export default function BudgetSheet({
               <thead>
                 <tr>
                   <Th>Category</Th>
-                  <Th align="right">Actual</Th>
+                  <Th align="right" className="w-32 sm:w-36">Actual</Th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -303,7 +299,7 @@ export default function BudgetSheet({
                     <Td>
                       <TextInput value={c.name} onChange={(v) => updateCategory(i, { name: v })} />
                     </Td>
-                    <Td className="w-32">
+                    <Td className="w-32 sm:w-36">
                       <NumberInput value={c.actual} onChange={(v) => updateCategory(i, { actual: v })} />
                     </Td>
                   </tr>
@@ -322,19 +318,26 @@ export default function BudgetSheet({
             <table className="w-full border-collapse text-sm">
               <thead className="sticky top-0">
                 <tr>
-                  <Th>Day</Th>
-                  <Th align="right">Spending</Th>
+                  <Th className="w-28 sm:w-32">Day</Th>
+                  <Th align="right" className="w-32 sm:w-40">Spending</Th>
+                  <Th>{""}</Th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {data.daily.map((d, i) => (
-                  <tr key={i} className="odd:bg-white even:bg-zinc-50/50 hover:bg-indigo-50/40">
-                    <Td className="text-zinc-600">{d.day}</Td>
-                    <Td className="w-32">
-                      <NumberInput value={d.spending} onChange={(v) => updateDaily(i, v)} />
-                    </Td>
-                  </tr>
-                ))}
+                {monthDates(today).map((iso) => {
+                  const daySpending = data.expenses
+                    .filter((e) => e.date === iso)
+                    .reduce((s, e) => s + e.amount, 0);
+                  return (
+                    <tr key={iso} className="odd:bg-white even:bg-zinc-50/50 hover:bg-indigo-50/40">
+                      <Td className="w-28 sm:w-32 font-medium text-zinc-600">{fmtDayLabel(iso)}</Td>
+                      <Td className="w-32 sm:w-40">
+                        <Computed value={daySpending}>{daySpending > 0 ? fmtPKR(daySpending) : "—"}</Computed>
+                      </Td>
+                      <Td />
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

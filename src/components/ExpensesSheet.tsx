@@ -1,6 +1,6 @@
 "use client";
 
-import { Expense, expensesTotal, fmtPKR } from "@/lib/budget";
+import { Expense, currentMonthExpensesTotal, fmtDayLabel, fmtPKR, monthDates } from "@/lib/budget";
 
 function TableShell({ children }: { children: React.ReactNode }) {
   return (
@@ -55,61 +55,82 @@ function NumberInput({ value, onChange }: { value: number; onChange: (v: number)
   );
 }
 
+const BLANK: Omit<Expense, "date"> = { category: "", description: "", account: "", amount: 0 };
+
 export default function ExpensesSheet({
   expenses,
+  today,
   onExpensesChange,
 }: {
   expenses: Expense[];
+  today: Date;
   onExpensesChange: (expenses: Expense[]) => void;
 }) {
-  function update(index: number, patch: Partial<Expense>) {
-    onExpensesChange(expenses.map((e, i) => (i === index ? { ...e, ...patch } : e)));
+  const dates = monthDates(today);
+  const todayIso = dates.find((d) => d === isoOf(today));
+
+  function isoOf(date: Date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   }
 
-  function addRow() {
-    onExpensesChange([...expenses, { date: "", category: "", description: "", account: "", amount: 0 }]);
+  function update(date: string, patch: Partial<Expense>) {
+    const exists = expenses.some((e) => e.date === date);
+    if (exists) {
+      onExpensesChange(expenses.map((e) => (e.date === date ? { ...e, ...patch } : e)));
+    } else {
+      onExpensesChange([...expenses, { date, ...BLANK, ...patch }]);
+    }
   }
 
-  function removeRow(index: number) {
-    onExpensesChange(expenses.filter((_, i) => i !== index));
+  function clearDay(date: string) {
+    onExpensesChange(expenses.filter((e) => e.date !== date));
   }
+
+  const rows = dates.map((date) => expenses.find((e) => e.date === date) ?? { date, ...BLANK });
 
   return (
-    <div className="p-5">
+    <div>
       <TableShell>
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <Th>Date</Th>
-              <Th>Category</Th>
+              <Th className="w-28 sm:w-32">Date</Th>
+              <Th className="w-36 sm:w-44">Category</Th>
               <Th>Description</Th>
-              <Th>Account</Th>
-              <Th align="right">Amount</Th>
+              <Th className="w-36 sm:w-44">Account</Th>
+              <Th align="right" className="w-32 sm:w-36">
+                Amount
+              </Th>
               <th className="w-10 border-b border-zinc-200 bg-zinc-100/90 px-2 py-2.5" />
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200">
-            {expenses.map((e, i) => (
-              <tr key={i} className="group odd:bg-white even:bg-zinc-50/50 hover:bg-indigo-50/40">
-                <td className="border-b border-r border-zinc-200 px-2 py-1">
-                  <TextInput value={e.date} onChange={(v) => update(i, { date: v })} />
+            {rows.map((e) => (
+              <tr
+                key={e.date}
+                className={`group hover:bg-indigo-50/40 ${
+                  e.date === todayIso ? "bg-indigo-50/60" : "odd:bg-white even:bg-zinc-50/50"
+                }`}
+              >
+                <td className="w-28 sm:w-32 border-b border-r border-zinc-200 px-3 py-1 font-medium text-zinc-600">
+                  {fmtDayLabel(e.date)}
+                </td>
+                <td className="w-36 sm:w-44 border-b border-r border-zinc-200 px-2 py-1">
+                  <TextInput value={e.category} onChange={(v) => update(e.date, { category: v })} />
                 </td>
                 <td className="border-b border-r border-zinc-200 px-2 py-1">
-                  <TextInput value={e.category} onChange={(v) => update(i, { category: v })} />
+                  <TextInput value={e.description} onChange={(v) => update(e.date, { description: v })} />
                 </td>
-                <td className="border-b border-r border-zinc-200 px-2 py-1">
-                  <TextInput value={e.description} onChange={(v) => update(i, { description: v })} />
+                <td className="w-36 sm:w-44 border-b border-r border-zinc-200 px-2 py-1">
+                  <TextInput value={e.account} onChange={(v) => update(e.date, { account: v })} />
                 </td>
-                <td className="border-b border-r border-zinc-200 px-2 py-1">
-                  <TextInput value={e.account} onChange={(v) => update(i, { account: v })} />
-                </td>
-                <td className="w-36 border-b border-r border-zinc-200 px-2 py-1">
-                  <NumberInput value={e.amount} onChange={(v) => update(i, { amount: v })} />
+                <td className="w-32 sm:w-36 border-b border-r border-zinc-200 px-2 py-1">
+                  <NumberInput value={e.amount} onChange={(v) => update(e.date, { amount: v })} />
                 </td>
                 <td className="border-b border-zinc-200 px-2 py-1 text-center">
                   <button
-                    onClick={() => removeRow(i)}
-                    aria-label="Remove expense"
+                    onClick={() => clearDay(e.date)}
+                    aria-label="Clear day"
                     className="cursor-pointer text-zinc-400 transition-colors group-hover:text-red-500 hover:scale-110"
                   >
                     ✕
@@ -119,23 +140,20 @@ export default function ExpensesSheet({
             ))}
             <tr className="border-t border-zinc-200 bg-zinc-100/70 font-medium">
               <td className="border-r border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700" colSpan={4}>
-                Total
+                Total — {today.toLocaleString("en-US", { month: "long", year: "numeric" })}
               </td>
               <td className="w-36 border-r border-zinc-200 px-3 py-2.5 text-right font-mono text-sm font-bold text-zinc-900">
-                {fmtPKR(expensesTotal(expenses))}
+                {fmtPKR(currentMonthExpensesTotal(expenses, today))}
               </td>
               <td />
             </tr>
           </tbody>
         </table>
       </TableShell>
-
-      <button
-        onClick={addRow}
-        className="mt-4 cursor-pointer rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white shadow-2xs hover:bg-indigo-700"
-      >
-        + Add expense
-      </button>
+      <p className="mt-3 text-xs text-zinc-500">
+        A row exists for every day of the current month automatically. Once the month changes, this list switches to
+        the new month&apos;s days — past months stay saved, just not shown here.
+      </p>
     </div>
   );
 }
