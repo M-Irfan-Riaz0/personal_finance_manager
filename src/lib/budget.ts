@@ -60,7 +60,9 @@ export const DEFAULT_BUDGET: BudgetData = {
     { date: "2026-08-02", category: "Other", description: "Money given to Abdullah", account: "Meezan Bank", amount: 1300 },
     { date: "2026-08-03", category: "Other", description: "Money given to Rizwan", account: "Meezan Bank", amount: 1300 },
     { date: "2026-08-04", category: "Other", description: "Money given to Amir", account: "Meezan Bank", amount: 1000 },
-    { date: "2026-08-05", category: "Personal", description: "Personal & Household", account: "Meezan Bank", amount: 7400 },
+    { date: "2026-08-05", category: "Work & Tools", description: "Claude Subscription", account: "Meezan Bank", amount: 5400 },
+    { date: "2026-08-06", category: "Food", description: "Online Food", account: "Meezan Bank", amount: 1500 },
+    { date: "2026-08-07", category: "Personal", description: "Clothing", account: "Meezan Bank", amount: 500 },
   ],
 };
 
