@@ -56,7 +56,11 @@ export const DEFAULT_BUDGET: BudgetData = {
     minBalanceBuffer: 5000,
   },
   expenses: [
-    { date: "2026-08-01", category: "Other", description: "Expenses & Transfers", account: "Meezan Bank", amount: 21000 },
+    { date: "2026-08-01", category: "Other", description: "Money given to Ghazi", account: "Meezan Bank", amount: 10000 },
+    { date: "2026-08-02", category: "Other", description: "Money given to Abdullah", account: "Meezan Bank", amount: 1300 },
+    { date: "2026-08-03", category: "Other", description: "Money given to Rizwan", account: "Meezan Bank", amount: 1300 },
+    { date: "2026-08-04", category: "Other", description: "Money given to Amir", account: "Meezan Bank", amount: 1000 },
+    { date: "2026-08-05", category: "Personal", description: "Personal & Household", account: "Meezan Bank", amount: 7400 },
   ],
 };
 
