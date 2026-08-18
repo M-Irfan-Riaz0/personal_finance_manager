@@ -239,15 +239,6 @@ export default function BudgetSheet({
                   </Td>
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
-                  <Td className="text-zinc-600">Weekly spending limit</Td>
-                  <Td className="w-32 sm:w-36">
-                    <NumberInput
-                      value={data.plan.weeklySpendingLimit}
-                      onChange={(v) => updatePlan({ weeklySpendingLimit: v })}
-                    />
-                  </Td>
-                </tr>
-                <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600 font-medium">Personal Spending Cap (Max Self)</Td>
                   <Td className="w-32 sm:w-36">
                     <NumberInput
@@ -263,64 +254,13 @@ export default function BudgetSheet({
                   </Td>
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50 bg-indigo-50/30">
-                  <Td className="text-zinc-700 font-semibold">Personal Cap Remaining</Td>
+                  <Td className="text-zinc-700 font-semibold">Personal Allowance Remaining</Td>
                   <Td className="w-32 sm:w-36">
                     <Computed value={t.personalCapRemaining}>
                       <span className={t.personalCapRemaining >= 0 ? "text-emerald-700 font-semibold" : "text-rose-600 font-semibold"}>
                         {fmtPKR(t.personalCapRemaining)}
                       </span>
                     </Computed>
-                  </Td>
-                </tr>
-                <tr className="odd:bg-white even:bg-zinc-50/50">
-                  <Td className="text-zinc-600">Actual spending (Total)</Td>
-                  <Td className="w-32 sm:w-36">
-                    <Computed value={t.spentThisMonth}>{fmtPKR(t.spentThisMonth)}</Computed>
-                  </Td>
-                </tr>
-                <tr className="odd:bg-white even:bg-zinc-50/50">
-                  <Td className="text-zinc-600">Spent this week</Td>
-                  <Td className="w-32 sm:w-36">
-                    <Computed value={t.spentThisWeek}>{fmtPKR(t.spentThisWeek)}</Computed>
-                  </Td>
-                </tr>
-                <tr className="odd:bg-white even:bg-zinc-50/50">
-                  <Td className="text-zinc-600">Minimum balance buffer</Td>
-                  <Td className="w-32 sm:w-36">
-                    <NumberInput
-                      value={data.plan.minBalanceBuffer}
-                      onChange={(v) => updatePlan({ minBalanceBuffer: v })}
-                    />
-                  </Td>
-                </tr>
-                <tr className="odd:bg-white even:bg-zinc-50/50">
-                  <Td className="text-zinc-600">Available Savings</Td>
-                  <Td className="w-32 sm:w-36">
-                    <Computed value={t.safeToSpendNow}>{fmtPKR(t.safeToSpendNow)}</Computed>
-                  </Td>
-                </tr>
-                <tr className="odd:bg-white even:bg-zinc-50/50">
-                  <Td className="text-zinc-600">Daily Expense Ceiling</Td>
-                  <Td className="w-32 sm:w-36">
-                    <Computed value={t.safeToSpendPerDay}>{fmtPKR(t.safeToSpendPerDay)} / day</Computed>
-                  </Td>
-                </tr>
-                <tr className="odd:bg-white even:bg-zinc-50/50">
-                  <Td className="text-zinc-600">Daily average spent</Td>
-                  <Td className="w-32 sm:w-36">
-                    <Computed value={t.dailyAverageSpent}>{fmtPKR(t.dailyAverageSpent)} / day</Computed>
-                  </Td>
-                </tr>
-                <tr className="odd:bg-white even:bg-zinc-50/50">
-                  <Td className="text-zinc-600">Budget difference</Td>
-                  <Td className="w-32 sm:w-36">
-                    <Computed value={t.budgetDifference}>{fmtPKR(t.budgetDifference)}</Computed>
-                  </Td>
-                </tr>
-                <tr className="odd:bg-white even:bg-zinc-50/50">
-                  <Td className="text-zinc-600">Days left in month</Td>
-                  <Td className="w-32 sm:w-36">
-                    <Computed>{t.daysLeftInMonth} days</Computed>
                   </Td>
                 </tr>
               </tbody>
