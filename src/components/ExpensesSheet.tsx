@@ -30,11 +30,20 @@ function Th({
   );
 }
 
-function TextInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function TextInput({
+  value,
+  onChange,
+  list,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  list?: string;
+}) {
   return (
     <input
       type="text"
       value={value}
+      list={list}
       onChange={(e) => onChange(e.target.value)}
       className="w-full rounded-sm px-2.5 py-1 text-sm text-indigo-700 outline-none transition-colors hover:bg-indigo-50/50 focus:bg-indigo-50 focus:ring-2 focus:ring-indigo-500"
     />
@@ -116,13 +125,21 @@ export default function ExpensesSheet({
                   {fmtDayLabel(e.date)}
                 </td>
                 <td className="w-36 sm:w-44 border-b border-r border-zinc-200 px-2 py-1">
-                  <TextInput value={e.category} onChange={(v) => update(e.date, { category: v })} />
+                  <TextInput
+                    value={e.category}
+                    list="category-list"
+                    onChange={(v) => update(e.date, { category: v })}
+                  />
                 </td>
                 <td className="border-b border-r border-zinc-200 px-2 py-1">
                   <TextInput value={e.description} onChange={(v) => update(e.date, { description: v })} />
                 </td>
                 <td className="w-36 sm:w-44 border-b border-r border-zinc-200 px-2 py-1">
-                  <TextInput value={e.account} onChange={(v) => update(e.date, { account: v })} />
+                  <TextInput
+                    value={e.account}
+                    list="account-list"
+                    onChange={(v) => update(e.date, { account: v })}
+                  />
                 </td>
                 <td className="w-32 sm:w-36 border-b border-r border-zinc-200 px-2 py-1">
                   <NumberInput value={e.amount} onChange={(v) => update(e.date, { amount: v })} />
@@ -150,6 +167,25 @@ export default function ExpensesSheet({
           </tbody>
         </table>
       </TableShell>
+      <datalist id="category-list">
+        <option value="Food" />
+        <option value="Transport" />
+        <option value="Mobile & Internet" />
+        <option value="Work & Tools" />
+        <option value="Education" />
+        <option value="Family" />
+        <option value="Health" />
+        <option value="Personal" />
+        <option value="Other" />
+      </datalist>
+
+      <datalist id="account-list">
+        <option value="Cash" />
+        <option value="JazzCash" />
+        <option value="Meezan Bank" />
+        <option value="UBL" />
+      </datalist>
+
       <p className="mt-3 text-xs text-zinc-500">
         A row exists for every day of the current month automatically. Once the month changes, this list switches to
         the new month&apos;s days — past months stay saved, just not shown here.

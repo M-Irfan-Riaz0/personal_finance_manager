@@ -135,7 +135,7 @@ export default function BudgetSheet({
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {data.accounts.map((a, i) => (
+                {t.accountsComputed.map((a, i) => (
                   <tr key={i} className="odd:bg-white even:bg-zinc-50/50 hover:bg-indigo-50/40">
                     <Td>
                       <TextInput value={a.name} onChange={(v) => updateAccount(i, { name: v })} />
@@ -144,7 +144,7 @@ export default function BudgetSheet({
                       <NumberInput value={a.starting} onChange={(v) => updateAccount(i, { starting: v })} />
                     </Td>
                     <Td className="w-28 sm:w-32">
-                      <NumberInput value={a.current} onChange={(v) => updateAccount(i, { current: v })} />
+                      <Computed value={a.current}>{fmtPKR(a.current)}</Computed>
                     </Td>
                   </tr>
                 ))}
@@ -267,6 +267,18 @@ export default function BudgetSheet({
                   </Td>
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
+                  <Td className="text-zinc-600">Safe to spend per day</Td>
+                  <Td className="w-32 sm:w-36">
+                    <Computed value={t.safeToSpendPerDay}>{fmtPKR(t.safeToSpendPerDay)} / day</Computed>
+                  </Td>
+                </tr>
+                <tr className="odd:bg-white even:bg-zinc-50/50">
+                  <Td className="text-zinc-600">Daily average spent</Td>
+                  <Td className="w-32 sm:w-36">
+                    <Computed value={t.dailyAverageSpent}>{fmtPKR(t.dailyAverageSpent)} / day</Computed>
+                  </Td>
+                </tr>
+                <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Budget difference</Td>
                   <Td className="w-32 sm:w-36">
                     <Computed value={t.budgetDifference}>{fmtPKR(t.budgetDifference)}</Computed>
@@ -294,13 +306,13 @@ export default function BudgetSheet({
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {data.categories.map((c, i) => (
+                {t.categoriesComputed.map((c, i) => (
                   <tr key={i} className="odd:bg-white even:bg-zinc-50/50 hover:bg-indigo-50/40">
                     <Td>
                       <TextInput value={c.name} onChange={(v) => updateCategory(i, { name: v })} />
                     </Td>
                     <Td className="w-32 sm:w-36">
-                      <NumberInput value={c.actual} onChange={(v) => updateCategory(i, { actual: v })} />
+                      <Computed value={c.actual}>{fmtPKR(c.actual)}</Computed>
                     </Td>
                   </tr>
                 ))}

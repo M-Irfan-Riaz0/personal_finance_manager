@@ -80,15 +80,42 @@ function monthKey(date: Date) {
 }
 
 export function computeTotals(data: BudgetData, today: Date) {
-  const accountsTotalStarting = data.accounts.reduce((s, a) => s + a.starting, 0);
-  const accountsTotalCurrent = data.accounts.reduce((s, a) => s + a.current, 0);
+  // Auto-calculate account current balances dynamically: Starting - Expenses from account
+  const accountsComputed = data.accounts.map((a) => {
+    const spentFromAccount = data.expenses
+      .filter((e) => e.account.trim().toLowerCase() === a.name.trim().toLowerCase())
+      .reduce((s, e) => s + e.amount, 0);
+    return {
+      ...a,
+      current: a.starting - spentFromAccount,
+    };
+  });
+
+  const accountsTotalStarting = accountsComputed.reduce((s, a) => s + a.starting, 0);
+  const accountsTotalCurrent = accountsComputed.reduce((s, a) => s + a.current, 0);
   const peopleTotalRemaining = data.people.reduce((s, p) => s + (p.owed - p.received), 0);
-  const spentThisMonth = data.categories.reduce((s, c) => s + c.actual, 0);
+
+  // Auto-calculate category actual spending dynamically from logged expenses
+  const categoriesComputed = data.categories.map((c) => {
+    const spentForCategory = data.expenses
+      .filter((e) => e.category.trim().toLowerCase() === c.name.trim().toLowerCase())
+      .reduce((s, e) => s + e.amount, 0);
+    return {
+      ...c,
+      actual: spentForCategory > 0 ? spentForCategory : c.actual,
+    };
+  });
+
+  const totalLoggedExpenses = data.expenses.reduce((s, e) => s + e.amount, 0);
+  const spentThisMonth = totalLoggedExpenses > 0 ? totalLoggedExpenses : categoriesComputed.reduce((s, c) => s + c.actual, 0);
+
   const estimatedNetWorth = accountsTotalCurrent + peopleTotalRemaining;
   const safeToSpendNow = accountsTotalCurrent - data.plan.minBalanceBuffer;
   const budgetDifference = data.plan.monthlySpendingBudget - spentThisMonth;
 
-  const daysLeftInMonth = Math.max(daysInMonth(today) - today.getDate(), 0);
+  const daysLeft = Math.max(daysInMonth(today) - today.getDate(), 0);
+  const safeToSpendPerDay = daysLeft > 0 ? Math.max(safeToSpendNow / daysLeft, 0) : 0;
+  const dailyAverageSpent = today.getDate() > 0 ? spentThisMonth / today.getDate() : 0;
 
   const weekAgo = new Date(today);
   weekAgo.setDate(weekAgo.getDate() - 6);
@@ -97,14 +124,18 @@ export function computeTotals(data: BudgetData, today: Date) {
     .reduce((s, e) => s + e.amount, 0);
 
   return {
+    accountsComputed,
+    categoriesComputed,
     accountsTotalStarting,
     accountsTotalCurrent,
     peopleTotalRemaining,
     spentThisMonth,
     estimatedNetWorth,
     safeToSpendNow,
+    safeToSpendPerDay,
+    dailyAverageSpent,
     budgetDifference,
-    daysLeftInMonth,
+    daysLeftInMonth: daysLeft,
     spentThisWeek,
   };
 }
