@@ -63,8 +63,8 @@ export const DEFAULT_BUDGET: BudgetData = {
   ],
   plan: {
     incomeReceived: 70000,
-    monthlySpendingBudget: 15000,
-    weeklySpendingLimit: 3750,
+    monthlySpendingBudget: 10000,
+    weeklySpendingLimit: 2500,
     minBalanceBuffer: 0,
     personalSpendingCap: 5000,
   },
