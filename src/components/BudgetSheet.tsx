@@ -230,6 +230,14 @@ export default function BudgetSheet({
                     />
                   </Td>
                 </tr>
+                <tr className="odd:bg-white even:bg-zinc-50/50 bg-emerald-50/40">
+                  <Td className="text-emerald-900 font-semibold">Target Monthly Savings Goal</Td>
+                  <Td className="w-32 sm:w-36">
+                    <Computed value={t.targetSavings}>
+                      <span className="font-bold text-emerald-700">{fmtPKR(t.targetSavings)}</span>
+                    </Computed>
+                  </Td>
+                </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Weekly spending limit</Td>
                   <Td className="w-32 sm:w-36">

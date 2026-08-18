@@ -63,8 +63,8 @@ export const DEFAULT_BUDGET: BudgetData = {
   ],
   plan: {
     incomeReceived: 70000,
-    monthlySpendingBudget: 30000,
-    weeklySpendingLimit: 7500,
+    monthlySpendingBudget: 15000,
+    weeklySpendingLimit: 3750,
     minBalanceBuffer: 0,
     personalSpendingCap: 5000,
   },
@@ -163,6 +163,7 @@ export function computeTotals(data: BudgetData, today: Date) {
     .reduce((s, e) => s + e.amount, 0);
   const personalCap = data.plan.personalSpendingCap ?? 5000;
   const personalCapRemaining = personalCap - personalSpent;
+  const targetSavings = Math.max(data.plan.incomeReceived - data.plan.monthlySpendingBudget, 0);
 
   return {
     accountsComputed,
@@ -181,6 +182,7 @@ export function computeTotals(data: BudgetData, today: Date) {
     personalSpent,
     personalCap,
     personalCapRemaining,
+    targetSavings,
   };
 }
 
