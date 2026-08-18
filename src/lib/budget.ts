@@ -113,10 +113,19 @@ export function computeTotals(data: BudgetData, today: Date) {
     };
   });
 
-  const totalLoggedExpenses = data.expenses.reduce((s, e) => s + e.amount, 0);
-  const spentThisMonth = totalLoggedExpenses > 0 ? totalLoggedExpenses : categoriesComputed.reduce((s, c) => s + c.actual, 0);
+  // Money given / transferred to people is a receivable, not personal spending
+  const isGivenMoney = (e: Expense) =>
+    e.category.trim().toLowerCase() === "other" ||
+    e.description.toLowerCase().includes("given") ||
+    e.description.toLowerCase().includes("transfer") ||
+    data.people.some((p) => p.name.length > 1 && e.description.toLowerCase().includes(p.name.toLowerCase()));
 
-  const estimatedNetWorth = accountsTotalCurrent + peopleTotalRemaining;
+  const actualSpendingExpenses = data.expenses.filter((e) => !isGivenMoney(e));
+  const spentThisMonth = actualSpendingExpenses.length > 0
+    ? actualSpendingExpenses.reduce((s, e) => s + e.amount, 0)
+    : categoriesComputed.filter((c) => c.name.trim().toLowerCase() !== "other").reduce((s, c) => s + c.actual, 0);
+
+  const estimatedNetWorth = accountsTotalCurrent;
   const safeToSpendNow = accountsTotalCurrent - data.plan.minBalanceBuffer;
   const budgetDifference = data.plan.monthlySpendingBudget - spentThisMonth;
 

@@ -113,9 +113,9 @@ export default function Home() {
       isNegative: totals.peopleTotalRemaining < 0,
     },
     {
-      label: "Estimated net worth",
-      value: fmtK(totals.estimatedNetWorth),
-      isNegative: totals.estimatedNetWorth < 0,
+      label: "Safe to spend now",
+      value: fmtK(totals.safeToSpendNow),
+      isNegative: totals.safeToSpendNow < 0,
     },
   ];
 
