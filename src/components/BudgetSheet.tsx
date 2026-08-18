@@ -152,13 +152,13 @@ export default function BudgetSheet({
                     </Td>
                   </tr>
                 ))}
-                <tr className="border-t border-zinc-200 bg-zinc-50">
-                  <Td className="py-2 text-sm font-medium text-zinc-700">Total</Td>
+                <tr className="border-t border-zinc-200 bg-zinc-50 font-medium">
+                  <Td className="py-2 text-sm font-semibold text-zinc-700">Total</Td>
                   <Td>
-                    <Computed>{fmtPKR(t.accountsTotalStarting)}</Computed>
+                    <Computed value={t.accountsTotalStarting}>{fmtPKR(t.accountsTotalStarting)}</Computed>
                   </Td>
                   <Td>
-                    <Computed>{fmtPKR(t.accountsTotalCurrent)}</Computed>
+                    <Computed value={t.accountsTotalCurrent}>{fmtPKR(t.accountsTotalCurrent)}</Computed>
                   </Td>
                 </tr>
               </tbody>
@@ -191,16 +191,16 @@ export default function BudgetSheet({
                       <NumberInput value={p.received} onChange={(v) => updatePerson(i, { received: v })} />
                     </Td>
                     <Td>
-                      <Computed>{fmtPKR(p.owed - p.received)}</Computed>
+                      <Computed value={p.owed - p.received}>{fmtPKR(p.owed - p.received)}</Computed>
                     </Td>
                   </tr>
                 ))}
-                <tr className="border-t border-zinc-200 bg-zinc-50">
-                  <Td className="py-2 text-sm font-medium text-zinc-700">Total</Td>
+                <tr className="border-t border-zinc-200 bg-zinc-50 font-medium">
+                  <Td className="py-2 text-sm font-semibold text-zinc-700">Total</Td>
                   <Td />
                   <Td />
                   <Td>
-                    <Computed>{fmtPKR(t.peopleTotalRemaining)}</Computed>
+                    <Computed value={t.peopleTotalRemaining}>{fmtPKR(t.peopleTotalRemaining)}</Computed>
                   </Td>
                 </tr>
               </tbody>
@@ -246,13 +246,13 @@ export default function BudgetSheet({
                 <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Actual spending</Td>
                   <Td className="w-32">
-                    <Computed>{fmtPKR(t.spentThisMonth)}</Computed>
+                    <Computed value={t.spentThisMonth}>{fmtPKR(t.spentThisMonth)}</Computed>
                   </Td>
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Spent this week</Td>
                   <Td className="w-32">
-                    <Computed>{fmtPKR(t.spentThisWeek)}</Computed>
+                    <Computed value={t.spentThisWeek}>{fmtPKR(t.spentThisWeek)}</Computed>
                   </Td>
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
@@ -267,13 +267,13 @@ export default function BudgetSheet({
                 <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Safe to spend now</Td>
                   <Td className="w-32">
-                    <Computed>{fmtPKR(t.safeToSpendNow)}</Computed>
+                    <Computed value={t.safeToSpendNow}>{fmtPKR(t.safeToSpendNow)}</Computed>
                   </Td>
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">
                   <Td className="text-zinc-600">Budget difference</Td>
                   <Td className="w-32">
-                    <Computed>{fmtPKR(t.budgetDifference)}</Computed>
+                    <Computed value={t.budgetDifference}>{fmtPKR(t.budgetDifference)}</Computed>
                   </Td>
                 </tr>
                 <tr className="odd:bg-white even:bg-zinc-50/50">

@@ -95,55 +95,93 @@ export default function Home() {
 
   const totals = computeTotals(data, today);
   const statCards = [
-    { label: "Money in accounts", value: fmtPKR(totals.accountsTotalCurrent) },
-    { label: "Spent this month", value: fmtPKR(totals.spentThisMonth) },
-    { label: "Still owed to me", value: fmtPKR(totals.peopleTotalRemaining) },
-    { label: "Estimated net worth", value: fmtPKR(totals.estimatedNetWorth) },
+    {
+      label: "Money in accounts",
+      value: fmtPKR(totals.accountsTotalCurrent),
+      color: totals.accountsTotalCurrent < 0 ? "text-rose-600" : "text-emerald-700",
+      bg: "bg-emerald-50/50 border-emerald-100",
+      dot: "bg-emerald-500",
+    },
+    {
+      label: "Spent this month",
+      value: fmtPKR(totals.spentThisMonth),
+      color: "text-amber-700",
+      bg: "bg-amber-50/40 border-amber-100",
+      dot: "bg-amber-500",
+    },
+    {
+      label: "Still owed to me",
+      value: fmtPKR(totals.peopleTotalRemaining),
+      color: "text-teal-700",
+      bg: "bg-teal-50/40 border-teal-100",
+      dot: "bg-teal-500",
+    },
+    {
+      label: "Estimated net worth",
+      value: fmtPKR(totals.estimatedNetWorth),
+      color: totals.estimatedNetWorth < 0 ? "text-rose-600" : "text-indigo-700",
+      bg: "bg-indigo-50/40 border-indigo-100",
+      dot: "bg-indigo-500",
+    },
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#f7f7f8]">
+    <div className="flex min-h-screen bg-[#f8fafc]">
       {/* Sidebar */}
-      <aside className="flex w-60 shrink-0 flex-col border-r border-zinc-200 bg-white">
-        <div className="border-b border-zinc-200 px-5 py-5">
-          <p className="text-sm font-semibold tracking-tight text-zinc-900">Personal Budget</p>
-          <p className="text-xs text-zinc-500">{data.month}</p>
+      <aside className="flex w-64 shrink-0 flex-col border-r border-zinc-200 bg-white">
+        <div className="border-b border-zinc-200 px-6 py-5">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-600 text-xs font-bold text-white shadow-2xs">
+              📊
+            </span>
+            <div>
+              <p className="text-sm font-bold tracking-tight text-zinc-900">Personal Budget</p>
+              <p className="text-xs font-medium text-zinc-500">{data.month}</p>
+            </div>
+          </div>
         </div>
 
-        <nav className="flex-1 space-y-1 p-3">
+        <nav className="flex-1 space-y-1.5 p-3">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`block w-full cursor-pointer border-l-2 px-3 py-2 text-left text-sm font-medium transition-colors ${
+              className={`flex w-full cursor-pointer items-center justify-between rounded-md border-l-3 px-3.5 py-2.5 text-left text-sm font-semibold transition-all ${
                 tab === t.id
-                  ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                  : "border-transparent text-zinc-600 hover:bg-zinc-50"
+                  ? "border-emerald-600 bg-emerald-50/80 text-emerald-800 shadow-2xs"
+                  : "border-transparent text-zinc-600 hover:bg-zinc-100/80 hover:text-zinc-900"
               }`}
             >
-              {t.label}
+              <span>{t.label}</span>
+              {tab === t.id && <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />}
             </button>
           ))}
         </nav>
 
         <div className="flex items-center gap-2 border-t border-zinc-200 px-5 py-4 text-xs font-medium text-zinc-500">
-          <span className={`h-2 w-2 ${statusDot}`} />
+          <span className={`h-2 w-2 rounded-full ${statusDot}`} />
           {statusLabel}
         </div>
       </aside>
 
       {/* Main content */}
       <main className="min-w-0 flex-1 p-8">
-        <h1 className="mb-6 text-2xl font-semibold tracking-tight text-zinc-900">
+        <h1 className="mb-6 text-2xl font-bold tracking-tight text-zinc-900">
           {TABS.find((t) => t.id === tab)?.label}
         </h1>
 
         {/* Summary stat cards */}
-        <div className="mb-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <div className="mb-8 grid grid-cols-2 gap-4 xl:grid-cols-4">
           {statCards.map((c) => (
-            <div key={c.label} className="border border-zinc-200 bg-white px-4 py-4">
-              <p className="text-xs font-medium text-zinc-500">{c.label}</p>
-              <p className="mt-1.5 text-xl font-semibold tracking-tight text-zinc-900">{c.value}</p>
+            <div
+              key={c.label}
+              className={`rounded-lg border px-5 py-4 shadow-2xs transition-all hover:shadow-xs ${c.bg}`}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">{c.label}</p>
+                <span className={`h-2 w-2 rounded-full ${c.dot}`} />
+              </div>
+              <p className={`mt-2 text-2xl font-bold tracking-tight ${c.color}`}>{c.value}</p>
             </div>
           ))}
         </div>
