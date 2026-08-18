@@ -1,0 +1,324 @@
+"use client";
+
+import { BudgetData, computeTotals, fmtPKR } from "@/lib/budget";
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <h2 className="mb-3 text-sm font-semibold text-zinc-900">{children}</h2>;
+}
+
+function TableShell({ children }: { children: React.ReactNode }) {
+  return <div className="overflow-hidden border border-zinc-200">{children}</div>;
+}
+
+function Th({ children, align = "left" }: { children: React.ReactNode; align?: "left" | "right" }) {
+  return (
+    <th
+      className={`bg-zinc-50 px-3 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500 ${
+        align === "right" ? "text-right" : "text-left"
+      }`}
+    >
+      {children}
+    </th>
+  );
+}
+
+function Td({
+  children,
+  align = "left",
+  className = "",
+}: {
+  children?: React.ReactNode;
+  align?: "left" | "right";
+  className?: string;
+}) {
+  return (
+    <td className={`px-1 py-1 ${align === "right" ? "text-right" : "text-left"} ${className}`}>{children}</td>
+  );
+}
+
+function TextInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full px-2 py-1.5 text-indigo-700 outline-none focus:bg-indigo-50 focus:ring-2 focus:ring-indigo-500"
+    />
+  );
+}
+
+function NumberInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <input
+      type="number"
+      value={value}
+      onChange={(e) => onChange(e.target.valueAsNumber || 0)}
+      className="w-full px-2 py-1.5 text-right tabular-nums text-indigo-700 outline-none focus:bg-indigo-50 focus:ring-2 focus:ring-indigo-500"
+    />
+  );
+}
+
+function Computed({ children }: { children: React.ReactNode }) {
+  return <span className="block px-2 py-1.5 text-right font-semibold tabular-nums text-zinc-900">{children}</span>;
+}
+
+export default function BudgetSheet({
+  data,
+  today,
+  onDataChange,
+}: {
+  data: BudgetData;
+  today: Date;
+  onDataChange: (data: BudgetData) => void;
+}) {
+  const t = computeTotals(data, today);
+
+  function updateAccount(index: number, patch: Partial<BudgetData["accounts"][number]>) {
+    const accounts = data.accounts.map((a, i) => (i === index ? { ...a, ...patch } : a));
+    onDataChange({ ...data, accounts });
+  }
+  function updatePerson(index: number, patch: Partial<BudgetData["people"][number]>) {
+    const people = data.people.map((p, i) => (i === index ? { ...p, ...patch } : p));
+    onDataChange({ ...data, people });
+  }
+  function updateCategory(index: number, patch: Partial<BudgetData["categories"][number]>) {
+    const categories = data.categories.map((c, i) => (i === index ? { ...c, ...patch } : c));
+    onDataChange({ ...data, categories });
+  }
+  function updateDaily(index: number, spending: number) {
+    const daily = data.daily.map((d, i) => (i === index ? { ...d, spending } : d));
+    onDataChange({ ...data, daily });
+  }
+  function updatePlan(patch: Partial<BudgetData["plan"]>) {
+    onDataChange({ ...data, plan: { ...data.plan, ...patch } });
+  }
+
+  return (
+    <div className="space-y-8 p-5">
+      {/* Account Balances + People Who Owe Me */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div>
+          <SectionTitle>Account Balances</SectionTitle>
+          <TableShell>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr>
+                  <Th>Account</Th>
+                  <Th align="right">Starting</Th>
+                  <Th align="right">Current</Th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {data.accounts.map((a, i) => (
+                  <tr key={i} className="odd:bg-white even:bg-zinc-50/50 hover:bg-indigo-50/40">
+                    <Td>
+                      <TextInput value={a.name} onChange={(v) => updateAccount(i, { name: v })} />
+                    </Td>
+                    <Td>
+                      <NumberInput value={a.starting} onChange={(v) => updateAccount(i, { starting: v })} />
+                    </Td>
+                    <Td>
+                      <NumberInput value={a.current} onChange={(v) => updateAccount(i, { current: v })} />
+                    </Td>
+                  </tr>
+                ))}
+                <tr className="border-t border-zinc-200 bg-zinc-50">
+                  <Td className="py-2 text-sm font-medium text-zinc-700">Total</Td>
+                  <Td>
+                    <Computed>{fmtPKR(t.accountsTotalStarting)}</Computed>
+                  </Td>
+                  <Td>
+                    <Computed>{fmtPKR(t.accountsTotalCurrent)}</Computed>
+                  </Td>
+                </tr>
+              </tbody>
+            </table>
+          </TableShell>
+        </div>
+
+        <div>
+          <SectionTitle>People Who Owe Me</SectionTitle>
+          <TableShell>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr>
+                  <Th>Person</Th>
+                  <Th align="right">Owed</Th>
+                  <Th align="right">Received</Th>
+                  <Th align="right">Remaining</Th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {data.people.map((p, i) => (
+                  <tr key={i} className="odd:bg-white even:bg-zinc-50/50 hover:bg-indigo-50/40">
+                    <Td>
+                      <TextInput value={p.name} onChange={(v) => updatePerson(i, { name: v })} />
+                    </Td>
+                    <Td>
+                      <NumberInput value={p.owed} onChange={(v) => updatePerson(i, { owed: v })} />
+                    </Td>
+                    <Td>
+                      <NumberInput value={p.received} onChange={(v) => updatePerson(i, { received: v })} />
+                    </Td>
+                    <Td>
+                      <Computed>{fmtPKR(p.owed - p.received)}</Computed>
+                    </Td>
+                  </tr>
+                ))}
+                <tr className="border-t border-zinc-200 bg-zinc-50">
+                  <Td className="py-2 text-sm font-medium text-zinc-700">Total</Td>
+                  <Td />
+                  <Td />
+                  <Td>
+                    <Computed>{fmtPKR(t.peopleTotalRemaining)}</Computed>
+                  </Td>
+                </tr>
+              </tbody>
+            </table>
+          </TableShell>
+        </div>
+      </div>
+
+      {/* Monthly Plan + Spending by Category */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div>
+          <SectionTitle>Monthly Plan</SectionTitle>
+          <TableShell>
+            <table className="w-full border-collapse text-sm">
+              <tbody className="divide-y divide-zinc-100">
+                <tr className="odd:bg-white even:bg-zinc-50/50">
+                  <Td className="text-zinc-600">Income received</Td>
+                  <Td className="w-32">
+                    <NumberInput
+                      value={data.plan.incomeReceived}
+                      onChange={(v) => updatePlan({ incomeReceived: v })}
+                    />
+                  </Td>
+                </tr>
+                <tr className="odd:bg-white even:bg-zinc-50/50">
+                  <Td className="text-zinc-600">Monthly spending budget</Td>
+                  <Td className="w-32">
+                    <NumberInput
+                      value={data.plan.monthlySpendingBudget}
+                      onChange={(v) => updatePlan({ monthlySpendingBudget: v })}
+                    />
+                  </Td>
+                </tr>
+                <tr className="odd:bg-white even:bg-zinc-50/50">
+                  <Td className="text-zinc-600">Weekly spending limit</Td>
+                  <Td className="w-32">
+                    <NumberInput
+                      value={data.plan.weeklySpendingLimit}
+                      onChange={(v) => updatePlan({ weeklySpendingLimit: v })}
+                    />
+                  </Td>
+                </tr>
+                <tr className="odd:bg-white even:bg-zinc-50/50">
+                  <Td className="text-zinc-600">Actual spending</Td>
+                  <Td className="w-32">
+                    <Computed>{fmtPKR(t.spentThisMonth)}</Computed>
+                  </Td>
+                </tr>
+                <tr className="odd:bg-white even:bg-zinc-50/50">
+                  <Td className="text-zinc-600">Spent this week</Td>
+                  <Td className="w-32">
+                    <Computed>{fmtPKR(t.spentThisWeek)}</Computed>
+                  </Td>
+                </tr>
+                <tr className="odd:bg-white even:bg-zinc-50/50">
+                  <Td className="text-zinc-600">Minimum balance buffer</Td>
+                  <Td className="w-32">
+                    <NumberInput
+                      value={data.plan.minBalanceBuffer}
+                      onChange={(v) => updatePlan({ minBalanceBuffer: v })}
+                    />
+                  </Td>
+                </tr>
+                <tr className="odd:bg-white even:bg-zinc-50/50">
+                  <Td className="text-zinc-600">Safe to spend now</Td>
+                  <Td className="w-32">
+                    <Computed>{fmtPKR(t.safeToSpendNow)}</Computed>
+                  </Td>
+                </tr>
+                <tr className="odd:bg-white even:bg-zinc-50/50">
+                  <Td className="text-zinc-600">Budget difference</Td>
+                  <Td className="w-32">
+                    <Computed>{fmtPKR(t.budgetDifference)}</Computed>
+                  </Td>
+                </tr>
+                <tr className="odd:bg-white even:bg-zinc-50/50">
+                  <Td className="text-zinc-600">Days left in month</Td>
+                  <Td className="w-32">
+                    <Computed>{t.daysLeftInMonth} days</Computed>
+                  </Td>
+                </tr>
+              </tbody>
+            </table>
+          </TableShell>
+        </div>
+
+        <div>
+          <SectionTitle>Spending by Category</SectionTitle>
+          <TableShell>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr>
+                  <Th>Category</Th>
+                  <Th align="right">Actual</Th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {data.categories.map((c, i) => (
+                  <tr key={i} className="odd:bg-white even:bg-zinc-50/50 hover:bg-indigo-50/40">
+                    <Td>
+                      <TextInput value={c.name} onChange={(v) => updateCategory(i, { name: v })} />
+                    </Td>
+                    <Td className="w-32">
+                      <NumberInput value={c.actual} onChange={(v) => updateCategory(i, { actual: v })} />
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableShell>
+        </div>
+      </div>
+
+      {/* Daily Spending */}
+      <div>
+        <SectionTitle>Daily Spending — {data.month}</SectionTitle>
+        <TableShell>
+          <div className="max-h-80 overflow-y-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead className="sticky top-0">
+                <tr>
+                  <Th>Day</Th>
+                  <Th align="right">Spending</Th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {data.daily.map((d, i) => (
+                  <tr key={i} className="odd:bg-white even:bg-zinc-50/50 hover:bg-indigo-50/40">
+                    <Td className="text-zinc-600">{d.day}</Td>
+                    <Td className="w-32">
+                      <NumberInput value={d.spending} onChange={(v) => updateDaily(i, v)} />
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </TableShell>
+      </div>
+
+      {/* Legend */}
+      <div className="bg-zinc-50 px-4 py-3 text-xs text-zinc-500">
+        <p>
+          <span className="font-medium text-indigo-700">Indigo</span> fields are editable · other values are
+          calculated automatically.
+        </p>
+        <p className="mt-1">Current balance = Starting balance minus all expenses from that account.</p>
+      </div>
+    </div>
+  );
+}
