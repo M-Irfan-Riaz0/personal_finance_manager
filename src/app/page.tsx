@@ -108,7 +108,7 @@ export default function Home() {
       isNegative: false,
     },
     {
-      label: "Still owed to me",
+      label: "Money given to people",
       value: fmtK(totals.peopleTotalRemaining),
       isNegative: totals.peopleTotalRemaining < 0,
     },

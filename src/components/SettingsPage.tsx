@@ -217,8 +217,8 @@ export default function SettingsPage({
           </div>
         </Card>
 
-        {/* People Who Owe Me */}
-        <Card title="People Who Owe Me">
+        {/* Money Given to People */}
+        <Card title="Money Given to People">
           <form onSubmit={addPerson} className="mb-4 flex flex-col gap-2">
             <div className="grid grid-cols-2 gap-2">
               <Input

@@ -163,7 +163,7 @@ export default function BudgetSheet({
         </div>
 
         <div>
-          <SectionTitle>People Who Owe Me</SectionTitle>
+          <SectionTitle>Money Given to People</SectionTitle>
           <TableShell>
             <table className="w-full border-collapse text-sm">
               <thead>
