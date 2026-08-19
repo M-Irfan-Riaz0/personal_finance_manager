@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { APP_PASSWORD } from "@/lib/auth";
 
 const STORAGE_KEY = "pbm_unlocked";
 const LAST_ACTIVITY_KEY = "pbm_last_activity";
-const PASSWORD = "pokemon";
+const PASSWORD = APP_PASSWORD;
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000; // re-lock after 5 minutes idle
 
 export default function PasswordGate({ children }: { children: React.ReactNode }) {

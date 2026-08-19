@@ -1,96 +1,16 @@
 "use client";
 
-import { BudgetData, computeTotals, fmtPKR, monthDates, fmtDayLabel } from "@/lib/budget";
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="mb-3 text-sm font-semibold tracking-tight text-zinc-900">{children}</h2>;
-}
-
-function TableShell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="overflow-x-auto rounded-md border border-zinc-300 bg-white shadow-2xs">
-      {children}
-    </div>
-  );
-}
-
-function Th({
-  children,
-  align = "left",
-  className = "",
-}: {
-  children?: React.ReactNode;
-  align?: "left" | "right";
-  className?: string;
-}) {
-  return (
-    <th
-      className={`border-b border-r border-zinc-200 bg-zinc-100/90 px-3.5 py-2.5 text-xs font-semibold uppercase tracking-wider text-zinc-600 last:border-r-0 ${
-        align === "right" ? "text-right" : "text-left"
-      } ${className}`}
-    >
-      {children}
-    </th>
-  );
-}
-
-function Td({
-  children,
-  align = "left",
-  className = "",
-}: {
-  children?: React.ReactNode;
-  align?: "left" | "right";
-  className?: string;
-}) {
-  return (
-    <td
-      className={`border-b border-r border-zinc-200 px-2 py-1 text-sm last:border-r-0 ${
-        align === "right" ? "text-right" : "text-left"
-      } ${className}`}
-    >
-      {children}
-    </td>
-  );
-}
-
-function TextInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <input
-      type="text"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-sm px-2.5 py-1 text-sm text-indigo-700 outline-none transition-colors hover:bg-indigo-50/50 focus:bg-indigo-50 focus:ring-2 focus:ring-indigo-500"
-    />
-  );
-}
-
-function NumberInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const isNegative = value < 0;
-  return (
-    <input
-      type="number"
-      value={value}
-      onChange={(e) => onChange(e.target.valueAsNumber || 0)}
-      className={`w-full rounded-sm px-2.5 py-1 text-right tabular-nums outline-none transition-colors hover:bg-indigo-50/50 focus:bg-indigo-50 focus:ring-2 focus:ring-indigo-500 ${
-        isNegative ? "font-semibold text-rose-600" : "font-medium text-indigo-700"
-      }`}
-    />
-  );
-}
-
-function Computed({ children, value }: { children: React.ReactNode; value?: number }) {
-  const isNegative = value !== undefined ? value < 0 : false;
-  return (
-    <span
-      className={`block px-2.5 py-1 text-right font-semibold tabular-nums ${
-        isNegative ? "text-rose-600" : "text-zinc-900"
-      }`}
-    >
-      {children}
-    </span>
-  );
-}
+import { BudgetData, computeTotals, fmtPKR, monthDates } from "@/lib/budget";
+import {
+  SectionTitle,
+  TableShell,
+  Th,
+  Td,
+  Computed,
+  CellTextInput as TextInput,
+  CellNumberInput as NumberInput,
+  IconHandshake,
+} from "@/components/ui";
 
 export default function BudgetSheet({
   data,
@@ -196,9 +116,9 @@ export default function BudgetSheet({
                           onClick={() => updatePerson(i, { received: p.owed })}
                           title="Mark full amount as returned"
                           aria-label={`Mark ${p.name || "person"}'s money as returned`}
-                          className="cursor-pointer text-base leading-none hover:scale-110 transition-transform"
+                          className="cursor-pointer text-emerald-600 transition-transform hover:scale-110"
                         >
-                          🤝
+                          <IconHandshake className="h-4 w-4" />
                         </button>
                       )}
                     </Td>

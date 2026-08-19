@@ -27,8 +27,13 @@ create table if not exists public.todos (
   status text not null default 'todo', -- todo | doing | done
   priority text not null default 'Medium', -- Low | Medium | High
   due_date date,
+  tags text[] not null default '{}',
+  subtasks jsonb not null default '[]', -- [{ id, text, done }]
   created_at timestamptz not null default now()
 );
+
+alter table public.todos add column if not exists tags text[] not null default '{}';
+alter table public.todos add column if not exists subtasks jsonb not null default '[]';
 
 alter table public.todos enable row level security;
 
@@ -128,3 +133,19 @@ create policy "anon full access to learning-files bucket"
   for all
   using (bucket_id = 'learning-files')
   with check (bucket_id = 'learning-files');
+
+-- Brainstorming module (freeform whiteboard/canvas)
+create table if not exists public.brainstorm_boards (
+  id text primary key default 'default',
+  elements jsonb not null default '[]',
+  updated_at timestamptz not null default now()
+);
+
+alter table public.brainstorm_boards enable row level security;
+
+drop policy if exists "anon full access to brainstorm_boards" on public.brainstorm_boards;
+create policy "anon full access to brainstorm_boards"
+  on public.brainstorm_boards
+  for all
+  using (true)
+  with check (true);

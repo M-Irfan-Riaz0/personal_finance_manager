@@ -10,7 +10,9 @@ import HomePage from "@/components/HomePage";
 import TodosPage from "@/components/TodosPage";
 import HabitsPage from "@/components/HabitsPage";
 import LearningPage from "@/components/LearningPage";
+import BrainstormPage from "@/components/BrainstormPage";
 import { createClient } from "@/lib/supabase/client";
+import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import {
   BudgetData,
   DEFAULT_BUDGET,
@@ -25,6 +27,7 @@ import {
 import { Todo } from "@/lib/todos";
 import { Habit, HabitLog } from "@/lib/habits";
 import { LearningFile, LearningItem } from "@/lib/learning";
+import { StatTile, IconX } from "@/components/ui";
 
 const LEGACY_SHEET_ID = "default";
 const MONTH_KEY_RE = /^\d{4}-\d{2}$/;
@@ -35,30 +38,84 @@ const hasSupabaseConfig =
 // render agree; the real client date is applied after mount (see useEffect below).
 const SSR_SAFE_TODAY = new Date(2026, 7, 18);
 
-type Tab = "home" | "overview" | "expenses" | "future" | "todos" | "habits" | "learning" | "settings";
+type Tab = "home" | "overview" | "expenses" | "future" | "todos" | "habits" | "learning" | "brainstorm" | "settings";
+type Section = "home" | "finance" | "productivity" | "settings";
 
-const NAV_SECTIONS: { title?: string; items: { id: Tab; label: string }[] }[] = [
-  { items: [{ id: "home", label: "Home" }] },
-  {
-    title: "Finance",
+const SECTIONS: Record<Section, { label: string; defaultTab: Tab; items: { id: Tab; label: string }[] }> = {
+  home: { label: "Home", defaultTab: "home", items: [] },
+  finance: {
+    label: "Finance",
+    defaultTab: "overview",
     items: [
       { id: "overview", label: "Budget Overview" },
       { id: "expenses", label: "Daily Expenses" },
       { id: "future", label: "Future Spending" },
     ],
   },
-  {
-    title: "Productivity",
+  productivity: {
+    label: "Productivity",
+    defaultTab: "todos",
     items: [
       { id: "todos", label: "Todos" },
       { id: "habits", label: "Habits" },
       { id: "learning", label: "Learning" },
+      { id: "brainstorm", label: "Brainstorming" },
     ],
   },
-  { items: [{ id: "settings", label: "Settings" }] },
-];
+  settings: { label: "Settings", defaultTab: "settings", items: [] },
+};
 
-const ALL_TABS = NAV_SECTIONS.flatMap((s) => s.items);
+const SECTION_ORDER: Section[] = ["home", "finance", "productivity", "settings"];
+
+function sectionOfTab(t: Tab): Section {
+  if (t === "home") return "home";
+  if (t === "settings") return "settings";
+  if (t === "overview" || t === "expenses" || t === "future") return "finance";
+  return "productivity";
+}
+
+const TAB_LABELS: Record<Tab, string> = Object.values(SECTIONS).reduce(
+  (acc, section) => {
+    section.items.forEach((item) => {
+      acc[item.id] = item.label;
+    });
+    return acc;
+  },
+  { home: "Home", settings: "Settings" } as Record<Tab, string>,
+);
+
+function SectionIcon({ section }: { section: Section }) {
+  const common = { fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 } as const;
+  if (section === "home") {
+    return (
+      <svg className="h-4 w-4" {...common}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10h14V10" />
+      </svg>
+    );
+  }
+  if (section === "finance") {
+    return (
+      <svg className="h-4 w-4" {...common}>
+        <circle cx="12" cy="12" r="9" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v10M9.5 9.5c0-1 1-1.8 2.5-1.8s2.5.9 2.5 2-1 1.6-2.5 2-2.5 1-2.5 2 1 2 2.5 2 2.5-.8 2.5-1.8" />
+      </svg>
+    );
+  }
+  if (section === "productivity") {
+    return (
+      <svg className="h-4 w-4" {...common}>
+        <rect x="4" y="4" width="16" height="16" rx="2" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12l2.5 2.5L16 9" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="h-4 w-4" {...common}>
+      <circle cx="12" cy="12" r="3" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+    </svg>
+  );
+}
 
 export default function Home() {
   const [data, setData] = useState<BudgetData>(DEFAULT_BUDGET);
@@ -67,6 +124,7 @@ export default function Home() {
   const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
   const [learningItems, setLearningItems] = useState<LearningItem[]>([]);
   const [learningFiles, setLearningFiles] = useState<LearningFile[]>([]);
+  const [brainstormElements, setBrainstormElements] = useState<readonly ExcalidrawElement[]>([]);
   const [today, setToday] = useState<Date>(SSR_SAFE_TODAY);
   const [tab, setTab] = useState<Tab>("home");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -181,7 +239,9 @@ export default function Home() {
 
     (async () => {
       const { data: rows } = await supabase.from("todos").select("*").order("created_at", { ascending: true });
-      if (rows) setTodos(rows as Todo[]);
+      if (rows) {
+        setTodos((rows as Todo[]).map((t) => ({ ...t, tags: t.tags ?? [], subtasks: t.subtasks ?? [] })));
+      }
     })();
 
     (async () => {
@@ -206,7 +266,27 @@ export default function Home() {
       const { data: rows } = await supabase.from("learning_files").select("*");
       if (rows) setLearningFiles(rows as LearningFile[]);
     })();
+
+    (async () => {
+      const { data: row } = await supabase
+        .from("brainstorm_boards")
+        .select("elements")
+        .eq("id", "default")
+        .maybeSingle();
+      if (row?.elements) {
+        setBrainstormElements(row.elements as ExcalidrawElement[]);
+      } else {
+        await supabase.from("brainstorm_boards").insert({ id: "default", elements: [] });
+      }
+    })();
   }, []);
+
+  function handleBrainstormChange(elements: readonly ExcalidrawElement[]) {
+    setBrainstormElements(elements);
+    if (!hasSupabaseConfig) return;
+    const supabase = createClient();
+    supabase.from("brainstorm_boards").upsert({ id: "default", elements, updated_at: new Date().toISOString() });
+  }
 
   function handleDataChange(next: BudgetData) {
     setData(next);
@@ -244,7 +324,9 @@ export default function Home() {
               ? "Supabase not configured"
               : "Up to date";
 
-  const isCurrentMonth = !activeMonthKey || activeMonthKey === monthKey(today);
+  const currentMonthKey = monthKey(today);
+  const isCurrentMonth = !activeMonthKey || activeMonthKey === currentMonthKey;
+  const isFutureMonth = !!activeMonthKey && activeMonthKey > currentMonthKey;
   const referenceDate = isCurrentMonth ? today : lastDayOfMonthKey(activeMonthKey);
 
   const totals = computeTotals(data, referenceDate);
@@ -272,6 +354,7 @@ export default function Home() {
   ];
 
   const showStatCards = tab === "overview" || tab === "expenses";
+  const activeSection = sectionOfTab(tab);
 
   return (
     <PasswordGate>
@@ -294,7 +377,6 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-600 shadow-2xs">
               <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 1312 4-4 4 4 4-11" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 19h16M7 15l4-4 4 4 5-5" />
               </svg>
             </span>
@@ -307,85 +389,122 @@ export default function Home() {
             aria-label="Close menu"
             className="cursor-pointer text-zinc-400 hover:text-zinc-700 sm:hidden"
           >
-            ✕
+            <IconX className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Month switcher */}
-        <div className="relative border-b border-zinc-200 px-3 py-3">
-          <button
-            onClick={() => setMonthMenuOpen((v) => !v)}
-            className="flex w-full cursor-pointer items-center justify-between rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-          >
-            <span className="flex items-center gap-1.5">
-              <svg className="h-4 w-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-              {activeMonthKey ? monthLabel(activeMonthKey) : data.month}
-              {!isCurrentMonth && (
-                <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                  Archive
-                </span>
-              )}
-            </span>
-            <span className="text-zinc-400">{monthMenuOpen ? "▲" : "▼"}</span>
-          </button>
-
-          {monthMenuOpen && (
-            <div className="absolute left-3 right-3 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg">
-              {availableMonths.map((key) => (
-                <button
-                  key={key}
-                  onClick={() => switchToMonth(key)}
-                  className={`flex w-full cursor-pointer items-center justify-between px-3 py-2 text-left text-sm hover:bg-zinc-50 ${
-                    key === activeMonthKey ? "bg-indigo-50 font-semibold text-indigo-700" : "text-zinc-700"
-                  }`}
-                >
-                  {monthLabel(key)}
-                  {key === monthKey(today) && <span className="text-[10px] text-zinc-400">current</span>}
-                </button>
-              ))}
-              <button
-                onClick={createNewMonth}
-                disabled={creatingMonth}
-                className="flex w-full cursor-pointer items-center gap-1.5 border-t border-zinc-100 px-3 py-2 text-left text-sm font-medium text-indigo-600 hover:bg-indigo-50 disabled:opacity-50"
-              >
-                {creatingMonth ? "Creating…" : "+ New Month"}
-              </button>
-            </div>
-          )}
+        {/* Section switcher: Home / Finance / Productivity / Settings */}
+        <div className="flex flex-col gap-1 border-b border-zinc-200 p-2">
+          {SECTION_ORDER.map((s) => (
+            <button
+              key={s}
+              onClick={() => {
+                setTab(SECTIONS[s].defaultTab);
+                setSidebarOpen(false);
+              }}
+              className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
+                activeSection === s ? "bg-zinc-900 text-white" : "text-zinc-500 hover:bg-zinc-100"
+              }`}
+            >
+              <SectionIcon section={s} />
+              {SECTIONS[s].label}
+            </button>
+          ))}
         </div>
 
-        <nav className="flex-1 space-y-4 overflow-y-auto p-3">
-          {NAV_SECTIONS.map((section, i) => (
-            <div key={i}>
-              {section.title && (
-                <p className="mb-1 px-3.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
-                  {section.title}
-                </p>
-              )}
-              <div className="space-y-1">
-                {section.items.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      setTab(t.id);
-                      setSidebarOpen(false);
-                    }}
-                    className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3.5 py-2.5 text-left text-sm font-semibold transition-all ${
-                      tab === t.id
-                        ? "bg-zinc-900 text-white shadow-2xs"
-                        : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+        {/* Month switcher — only relevant inside Finance */}
+        {activeSection === "finance" && (
+          <div className="relative border-b border-zinc-200 px-3 py-3">
+            <button
+              onClick={() => setMonthMenuOpen((v) => !v)}
+              className="flex w-full cursor-pointer items-center justify-between rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+            >
+              <span className="flex items-center gap-1.5">
+                <svg className="h-4 w-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                {activeMonthKey ? monthLabel(activeMonthKey) : data.month}
+                {!isCurrentMonth && (
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                      isFutureMonth ? "bg-indigo-100 text-indigo-700" : "bg-amber-100 text-amber-700"
                     }`}
                   >
-                    <span>{t.label}</span>
+                    {isFutureMonth ? "Upcoming" : "Archive"}
+                  </span>
+                )}
+              </span>
+              <span className="text-zinc-400">{monthMenuOpen ? "▲" : "▼"}</span>
+            </button>
+
+            {monthMenuOpen && (
+              <div className="absolute left-3 right-3 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg">
+                {availableMonths.map((key) => (
+                  <button
+                    key={key}
+                    onClick={() => switchToMonth(key)}
+                    className={`flex w-full cursor-pointer items-center justify-between px-3 py-2 text-left text-sm hover:bg-zinc-50 ${
+                      key === activeMonthKey ? "bg-indigo-50 font-semibold text-indigo-700" : "text-zinc-700"
+                    }`}
+                  >
+                    {monthLabel(key)}
+                    {key === monthKey(today) && <span className="text-[10px] text-zinc-400">current</span>}
                   </button>
                 ))}
+                <button
+                  onClick={createNewMonth}
+                  disabled={creatingMonth}
+                  className="flex w-full cursor-pointer items-center gap-1.5 border-t border-zinc-100 px-3 py-2 text-left text-sm font-medium text-indigo-600 hover:bg-indigo-50 disabled:opacity-50"
+                >
+                  {creatingMonth ? "Creating…" : "+ New Month"}
+                </button>
               </div>
-            </div>
+            )}
+          </div>
+        )}
+
+        {/* Finance sub-nav — only shown once you click into Finance */}
+        {activeSection === "finance" && (
+          <nav className="space-y-1 border-b border-zinc-200 p-3">
+            {SECTIONS.finance.items.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => {
+                  setTab(t.id);
+                  setSidebarOpen(false);
+                }}
+                className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3.5 py-2.5 text-left text-sm font-semibold transition-all ${
+                  tab === t.id
+                    ? "bg-zinc-900 text-white shadow-2xs"
+                    : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+                }`}
+              >
+                <span>{t.label}</span>
+              </button>
+            ))}
+          </nav>
+        )}
+
+        {/* Productivity items — always shown */}
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+          {SECTIONS.productivity.items.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => {
+                setTab(t.id);
+                setSidebarOpen(false);
+              }}
+              className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3.5 py-2.5 text-left text-sm font-semibold transition-all ${
+                tab === t.id
+                  ? "bg-zinc-900 text-white shadow-2xs"
+                  : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+              }`}
+            >
+              <span>{t.label}</span>
+            </button>
           ))}
         </nav>
 
@@ -408,7 +527,7 @@ export default function Home() {
             </svg>
           </button>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
-            {ALL_TABS.find((t) => t.id === tab)?.label}
+            {TAB_LABELS[tab]}
           </h1>
         </div>
 
@@ -416,20 +535,7 @@ export default function Home() {
         {showStatCards && (
           <div className="mb-8 grid grid-cols-2 gap-4 xl:grid-cols-4">
             {statCards.map((c) => (
-              <div
-                key={c.label}
-                className="rounded-lg border border-zinc-200 bg-white px-5 py-4 shadow-2xs transition-all hover:shadow-xs"
-              >
-                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">{c.label}</p>
-                <p
-                  className={`mt-2 text-2xl font-bold tracking-tight ${
-                    c.isNegative ? "text-rose-600" : "text-zinc-900"
-                  }`}
-                >
-                  {c.value}
-                </p>
-                <p className="mt-0.5 text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">PKR</p>
-              </div>
+              <StatTile key={c.label} label={c.label} value={c.value} isNegative={c.isNegative} sub="PKR" />
             ))}
           </div>
         )}
@@ -476,6 +582,9 @@ export default function Home() {
             onItemsChange={setLearningItems}
             onFilesChange={setLearningFiles}
           />
+        )}
+        {tab === "brainstorm" && (
+          <BrainstormPage elements={brainstormElements} onElementsChange={handleBrainstormChange} />
         )}
         {tab === "settings" && <SettingsPage data={data} onDataChange={handleDataChange} />}
       </main>

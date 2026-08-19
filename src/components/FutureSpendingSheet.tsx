@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FutureExpense, fmtPKR } from "@/lib/budget";
+import { IconRemoveButton } from "@/components/ui";
 
 export default function FutureSpendingSheet({
   futureExpenses = [],
@@ -141,13 +142,11 @@ export default function FutureSpendingSheet({
                     />
                   </div>
 
-                  <button
+                  <IconRemoveButton
                     onClick={() => deleteItem(item.id)}
-                    className="cursor-pointer text-zinc-300 hover:text-rose-500 transition-colors p-1"
-                    aria-label="Delete note"
-                  >
-                    ✕
-                  </button>
+                    label="Delete note"
+                    className="p-1 text-zinc-300 hover:text-rose-500"
+                  />
                 </div>
               );
             })

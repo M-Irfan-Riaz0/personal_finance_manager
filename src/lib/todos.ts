@@ -1,5 +1,6 @@
 export type TodoStatus = "todo" | "doing" | "done";
 export type TodoPriority = "Low" | "Medium" | "High";
+export type Subtask = { id: string; text: string; done: boolean };
 
 export type Todo = {
   id: string;
@@ -8,8 +9,15 @@ export type Todo = {
   status: TodoStatus;
   priority: TodoPriority;
   due_date: string | null; // ISO date, YYYY-MM-DD
+  tags: string[];
+  subtasks: Subtask[];
   created_at: string;
 };
+
+export function subtaskProgress(todo: Todo): { done: number; total: number } {
+  const subtasks = todo.subtasks ?? [];
+  return { done: subtasks.filter((s) => s.done).length, total: subtasks.length };
+}
 
 export function isOverdue(todo: Todo, today: Date) {
   if (!todo.due_date || todo.status === "done") return false;

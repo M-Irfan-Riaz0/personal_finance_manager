@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { monthDates, fmtDayLabel } from "@/lib/budget";
 import { Habit, HabitLog, HabitLogStatus, currentStreak, longestStreak, isoDateOf } from "@/lib/habits";
+import { Panel, EmptyState, TextField, PrimaryButton, IconRemoveButton } from "@/components/ui";
 
 const CYCLE: (HabitLogStatus | null)[] = [null, "clean", "slipped"];
 
@@ -82,30 +83,21 @@ export default function HabitsPage({
 
   return (
     <div>
-      <form
-        onSubmit={addHabit}
-        className="mb-6 flex items-end gap-2 rounded-md border border-zinc-300 bg-white p-4 shadow-2xs"
-      >
-        <label className="flex flex-1 flex-col gap-1 text-xs font-medium text-zinc-500">
-          Habit to break
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. No smoking"
-            className="rounded-sm border border-zinc-300 px-2.5 py-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-          />
-        </label>
-        <button
-          type="submit"
-          className="cursor-pointer rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          + Add habit
-        </button>
-      </form>
+      <Panel className="mb-6 p-4">
+        <form onSubmit={addHabit} className="flex items-end gap-2">
+          <div className="flex-1">
+            <TextField
+              label="Habit to break"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. No smoking"
+            />
+          </div>
+          <PrimaryButton type="submit">+ Add habit</PrimaryButton>
+        </form>
+      </Panel>
 
-      {habits.length === 0 && (
-        <p className="text-sm text-zinc-500">No habits yet. Add one above to start tracking.</p>
-      )}
+      {habits.length === 0 && <EmptyState>No habits yet. Add one above to start tracking.</EmptyState>}
 
       <div className="space-y-4">
         {habits.map((h) => {
@@ -113,7 +105,7 @@ export default function HabitsPage({
           const streak = currentStreak(habitLogs, today);
           const longest = longestStreak(habitLogs);
           return (
-            <div key={h.id} className="rounded-md border border-zinc-300 bg-white p-4 shadow-2xs">
+            <Panel key={h.id} className="p-4">
               <div className="mb-3 flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-zinc-900">{h.name}</h2>
@@ -124,13 +116,7 @@ export default function HabitsPage({
                     {streak} day streak · longest {longest}
                   </p>
                 </div>
-                <button
-                  onClick={() => removeHabit(h.id)}
-                  aria-label={`Remove ${h.name}`}
-                  className="cursor-pointer text-zinc-400 hover:text-red-500"
-                >
-                  ✕
-                </button>
+                <IconRemoveButton onClick={() => removeHabit(h.id)} label={`Remove ${h.name}`} />
               </div>
               <div className="flex flex-wrap gap-1">
                 {dates.map((date) => {
@@ -150,7 +136,7 @@ export default function HabitsPage({
               <p className="mt-2 text-[11px] text-zinc-400">
                 Click a day to cycle: no log → clean → slipped → no log.
               </p>
-            </div>
+            </Panel>
           );
         })}
       </div>

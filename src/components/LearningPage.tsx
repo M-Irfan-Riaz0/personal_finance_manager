@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   LEARNING_FILES_BUCKET,
@@ -12,6 +12,8 @@ import {
   VideoLink,
   ChapterNote,
 } from "@/lib/learning";
+import { Panel, EmptyState, TextField, SelectField, PrimaryButton, IconRemoveButton, IconBook, IconVideo, IconFile, IconNotes } from "@/components/ui";
+import RichTextEditor from "@/components/RichTextEditor";
 
 function TypeIcon({ type }: { type: LearningType }) {
   if (type === "course") {
@@ -55,41 +57,19 @@ const STATUS_COLOR: Record<LearningStatus, string> = {
   done: "bg-emerald-100 text-emerald-700",
 };
 
-function NotesField({
-  value,
-  placeholder,
-  onSave,
-}: {
-  value: string;
-  placeholder?: string;
-  onSave: (next: string) => void;
-}) {
-  const [text, setText] = useState(value);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function handleChange(next: string) {
-    setText(next);
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => onSave(next), 500);
-  }
-
-  return (
-    <textarea
-      value={text}
-      onChange={(e) => handleChange(e.target.value)}
-      placeholder={placeholder || "Write notes here..."}
-      rows={3}
-      className="w-full resize-y rounded-sm border border-zinc-300 px-2.5 py-1.5 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 bg-white"
-    />
-  );
-}
-
 function fileUrl(path: string) {
   const supabase = createClient();
   return supabase.storage.from(LEARNING_FILES_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
-type CardTab = "chapters" | "videos" | "files" | "overview";
+type DetailTab = "chapters" | "videos" | "files" | "overview";
+
+const DETAIL_TABS: { id: DetailTab; label: string; Icon: typeof IconBook }[] = [
+  { id: "chapters", label: "Chapters & Notes", Icon: IconBook },
+  { id: "videos", label: "Videos & Links", Icon: IconVideo },
+  { id: "files", label: "PDFs & Resources", Icon: IconFile },
+  { id: "overview", label: "Overview Notes", Icon: IconNotes },
+];
 
 export default function LearningPage({
   items,
@@ -107,13 +87,16 @@ export default function LearningPage({
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<"all" | LearningType>("all");
   const [filterStatus, setFilterStatus] = useState<"all" | LearningStatus>("all");
-  const [activeTabs, setActiveTabs] = useState<Record<string, CardTab>>({});
   const [uploadingId, setUploadingId] = useState<string | null>(null);
 
-  // Forms inside cards
-  const [newVideoTitle, setNewVideoTitle] = useState<Record<string, string>>({});
-  const [newVideoUrl, setNewVideoUrl] = useState<Record<string, string>>({});
-  const [newChapterTitle, setNewChapterTitle] = useState<Record<string, string>>({});
+  // Detail view state
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detailTab, setDetailTab] = useState<DetailTab>("chapters");
+
+  // Forms inside the detail view
+  const [newVideoTitle, setNewVideoTitle] = useState("");
+  const [newVideoUrl, setNewVideoUrl] = useState("");
+  const [newChapterTitle, setNewChapterTitle] = useState("");
 
   async function addItem(e: React.FormEvent) {
     e.preventDefault();
@@ -142,12 +125,15 @@ export default function LearningPage({
     onFilesChange(files.filter((f) => f.learning_item_id !== id));
     const supabase = createClient();
     await supabase.from("learning_items").delete().eq("id", id);
+    if (selectedId === id) {
+      setSelectedId(null);
+    }
   }
 
   // Video links management
   async function addVideoLink(item: LearningItem) {
-    const vTitle = newVideoTitle[item.id]?.trim();
-    const vUrl = newVideoUrl[item.id]?.trim();
+    const vTitle = newVideoTitle.trim();
+    const vUrl = newVideoUrl.trim();
     if (!vUrl) return;
 
     const newLink: VideoLink = {
@@ -158,8 +144,8 @@ export default function LearningPage({
 
     const video_links = [...(item.video_links || []), newLink];
     updateItem(item.id, { video_links });
-    setNewVideoTitle({ ...newVideoTitle, [item.id]: "" });
-    setNewVideoUrl({ ...newVideoUrl, [item.id]: "" });
+    setNewVideoTitle("");
+    setNewVideoUrl("");
   }
 
   async function removeVideoLink(item: LearningItem, linkId: string) {
@@ -169,7 +155,7 @@ export default function LearningPage({
 
   // Chapters & Notes management
   async function addChapter(item: LearningItem) {
-    const cTitle = newChapterTitle[item.id]?.trim();
+    const cTitle = newChapterTitle.trim();
     if (!cTitle) return;
 
     const newChapter: ChapterNote = {
@@ -180,18 +166,17 @@ export default function LearningPage({
     };
 
     const chapters = [...(item.chapters || []), newChapter];
-    // Auto re-calc progress % based on completed chapters
     const completedCount = chapters.filter((c) => c.completed).length;
-    const progress = chapters.length > 0 ? Math.round((completedCount / chapters.length) * 100) : item.progress;
+    const progress = chapters.length > 0 ? Math.round((completedCount / chapters.length) * 100) : 0;
 
     updateItem(item.id, { chapters, progress });
-    setNewChapterTitle({ ...newChapterTitle, [item.id]: "" });
+    setNewChapterTitle("");
   }
 
   async function updateChapter(item: LearningItem, chapterId: string, patch: Partial<ChapterNote>) {
     const chapters = (item.chapters || []).map((c) => (c.id === chapterId ? { ...c, ...patch } : c));
     const completedCount = chapters.filter((c) => c.completed).length;
-    const progress = chapters.length > 0 ? Math.round((completedCount / chapters.length) * 100) : item.progress;
+    const progress = chapters.length > 0 ? Math.round((completedCount / chapters.length) * 100) : 0;
     const status: LearningStatus = progress === 100 ? "done" : progress > 0 ? "in_progress" : item.status;
 
     updateItem(item.id, { chapters, progress, status });
@@ -200,7 +185,7 @@ export default function LearningPage({
   async function removeChapter(item: LearningItem, chapterId: string) {
     const chapters = (item.chapters || []).filter((c) => c.id !== chapterId);
     const completedCount = chapters.filter((c) => c.completed).length;
-    const progress = chapters.length > 0 ? Math.round((completedCount / chapters.length) * 100) : item.progress;
+    const progress = chapters.length > 0 ? Math.round((completedCount / chapters.length) * 100) : 0;
 
     updateItem(item.id, { chapters, progress });
   }
@@ -233,7 +218,7 @@ export default function LearningPage({
     await supabase.from("learning_files").delete().eq("id", file.id);
   }
 
-  // Search & Filters
+  // Search & Filters (grid view only)
   const filteredItems = items.filter((item) => {
     if (filterType !== "all" && item.type !== filterType) return false;
     if (filterStatus !== "all" && item.status !== filterStatus) return false;
@@ -248,43 +233,277 @@ export default function LearningPage({
     return titleMatch || notesMatch || videoMatch || chapterMatch;
   });
 
+  const selectedItem = selectedId ? items.find((i) => i.id === selectedId) : null;
+
+  function openItem(id: string) {
+    setSelectedId(id);
+    setDetailTab("chapters");
+  }
+
+  // -------------------------------------------------------------------------
+  // Detail view: a course/book/skill opened full-width with its own sub-nav
+  // -------------------------------------------------------------------------
+  if (selectedItem) {
+    const itemFiles = files.filter((f) => f.learning_item_id === selectedItem.id);
+    const vLinks = selectedItem.video_links || [];
+    const chapters = selectedItem.chapters || [];
+
+    return (
+      <div>
+        <button
+          onClick={() => setSelectedId(null)}
+          className="mb-4 flex cursor-pointer items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-indigo-700"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Learning
+        </button>
+
+        <Panel className="mb-4 p-5">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <TypeIcon type={selectedItem.type} />
+              <h1 className="text-lg font-bold text-zinc-900">{selectedItem.title}</h1>
+              <select
+                value={selectedItem.status}
+                onChange={(e) => updateItem(selectedItem.id, { status: e.target.value as LearningStatus })}
+                className={`cursor-pointer rounded-full px-2.5 py-0.5 text-xs font-semibold border-0 outline-none ${STATUS_COLOR[selectedItem.status]}`}
+              >
+                <option value="planned">Planned</option>
+                <option value="in_progress">In Progress</option>
+                <option value="done">Done</option>
+              </select>
+            </div>
+            <IconRemoveButton onClick={() => removeItem(selectedItem.id)} label={`Remove ${selectedItem.title}`} />
+          </div>
+
+          <div>
+            <div className="mb-1 flex items-center justify-between text-xs text-zinc-500">
+              <span>
+                Progress
+                <span className="ml-1 text-zinc-400">
+                  ({chapters.length === 0 ? "no chapters yet" : `${chapters.filter((c) => c.completed).length}/${chapters.length} chapters`})
+                </span>
+              </span>
+              <span className="font-medium text-zinc-700">{selectedItem.progress}%</span>
+            </div>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-100">
+              <div
+                className="h-full rounded-full bg-indigo-600 transition-all duration-300"
+                style={{ width: `${selectedItem.progress}%` }}
+              />
+            </div>
+          </div>
+        </Panel>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-[220px_1fr]">
+          {/* Detail sub-nav — this item's own sidebar */}
+          <Panel className="h-fit p-2">
+            <nav className="flex flex-col gap-1">
+              {DETAIL_TABS.map((t) => {
+                const count =
+                  t.id === "chapters" ? chapters.length : t.id === "videos" ? vLinks.length : t.id === "files" ? itemFiles.length : null;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setDetailTab(t.id)}
+                    className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors ${
+                      detailTab === t.id ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <t.Icon className="h-4 w-4" />
+                      {t.label}
+                    </span>
+                    {count !== null && (
+                      <span
+                        className={`rounded-full px-1.5 text-[11px] font-semibold ${
+                          detailTab === t.id ? "bg-white/20 text-white" : "bg-zinc-200 text-zinc-600"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </Panel>
+
+          {/* Detail content */}
+          <Panel className="p-5">
+            {detailTab === "chapters" && (
+              <div className="space-y-4">
+                {chapters.length === 0 && (
+                  <p className="text-sm text-zinc-400">
+                    No chapters added yet. Add chapter topics below to track notes and completion.
+                  </p>
+                )}
+
+                <div className="space-y-3">
+                  {chapters.map((chap) => (
+                    <div
+                      key={chap.id}
+                      className={`rounded-md border p-3 ${
+                        chap.completed ? "border-emerald-200 bg-emerald-50/30" : "border-zinc-200 bg-zinc-50/50"
+                      }`}
+                    >
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-zinc-800">
+                          <input
+                            type="checkbox"
+                            checked={chap.completed}
+                            onChange={(e) => updateChapter(selectedItem, chap.id, { completed: e.target.checked })}
+                            className="h-4 w-4 rounded-xs text-indigo-600 cursor-pointer"
+                          />
+                          <span className={chap.completed ? "text-zinc-400 line-through" : ""}>{chap.title}</span>
+                        </label>
+                        <IconRemoveButton onClick={() => removeChapter(selectedItem, chap.id)} label={`Remove ${chap.title}`} />
+                      </div>
+
+                      <RichTextEditor
+                        value={chap.notes}
+                        placeholder={`Notes for ${chap.title}...`}
+                        onSave={(notes) => updateChapter(selectedItem, chap.id, { notes })}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 border-t border-zinc-100 pt-3">
+                  <input
+                    value={newChapterTitle}
+                    onChange={(e) => setNewChapterTitle(e.target.value)}
+                    placeholder="e.g. Chapter 1: System Architecture"
+                    className="flex-1 rounded-sm border border-zinc-300 px-2.5 py-1.5 text-sm outline-none focus:border-indigo-500"
+                  />
+                  <PrimaryButton onClick={() => addChapter(selectedItem)}>+ Add Chapter</PrimaryButton>
+                </div>
+              </div>
+            )}
+
+            {detailTab === "videos" && (
+              <div className="space-y-4">
+                {vLinks.length === 0 && (
+                  <p className="text-sm text-zinc-400">No video links added yet. Add YouTube, Vimeo, or documentation links below.</p>
+                )}
+
+                <div className="space-y-2">
+                  {vLinks.map((v) => (
+                    <div key={v.id} className="flex items-center justify-between rounded-md border border-zinc-200 bg-zinc-50 p-2.5 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-zinc-800">{v.title}:</span>
+                        <a
+                          href={v.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 font-medium text-indigo-700 hover:underline"
+                        >
+                          {v.url}
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      </div>
+                      <IconRemoveButton onClick={() => removeVideoLink(selectedItem, v.id)} label={`Remove ${v.title}`} />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 border-t border-zinc-100 pt-3 sm:grid-cols-3">
+                  <input
+                    value={newVideoTitle}
+                    onChange={(e) => setNewVideoTitle(e.target.value)}
+                    placeholder="Video Title (e.g. Lecture 1)"
+                    className="rounded-sm border border-zinc-300 px-2.5 py-1.5 text-sm outline-none focus:border-indigo-500"
+                  />
+                  <input
+                    value={newVideoUrl}
+                    onChange={(e) => setNewVideoUrl(e.target.value)}
+                    placeholder="URL (e.g. https://youtube.com/...)"
+                    className="rounded-sm border border-zinc-300 px-2.5 py-1.5 text-sm outline-none focus:border-indigo-500"
+                  />
+                  <PrimaryButton onClick={() => addVideoLink(selectedItem)}>+ Add Video Link</PrimaryButton>
+                </div>
+              </div>
+            )}
+
+            {detailTab === "files" && (
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  {itemFiles.map((f) => (
+                    <div key={f.id} className="flex items-center justify-between rounded-sm border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm">
+                      <a
+                        href={fileUrl(f.storage_path)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 font-medium text-indigo-700 hover:underline"
+                      >
+                        <svg className="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        {f.file_name}
+                      </a>
+                      <IconRemoveButton onClick={() => removeFile(f)} label={`Remove ${f.file_name}`} />
+                    </div>
+                  ))}
+                </div>
+
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-dashed border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-600 hover:border-indigo-400 hover:text-indigo-700">
+                  {uploadingId === selectedItem.id ? "Uploading PDF…" : "+ Attach PDF Document"}
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    className="hidden"
+                    disabled={uploadingId === selectedItem.id}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) uploadFile(selectedItem.id, file);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+            )}
+
+            {detailTab === "overview" && (
+              <RichTextEditor
+                value={selectedItem.notes}
+                placeholder="High-level course overview, key takeaways, or general reflections..."
+                onSave={(notes) => updateItem(selectedItem.id, { notes })}
+              />
+            )}
+          </Panel>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Grid view: compact cards, click one to open its detail view
+  // -------------------------------------------------------------------------
   return (
     <div className="space-y-6">
-      {/* Top Creation Form */}
-      <form
-        onSubmit={addItem}
-        className="flex flex-col gap-2 rounded-md border border-zinc-300 bg-white p-4 shadow-2xs sm:flex-row sm:items-end"
-      >
-        <label className="flex flex-1 flex-col gap-1 text-xs font-medium text-zinc-500">
-          Course, Book, or Skill Name
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Next.js 16 Masterclass & System Design"
-            className="rounded-sm border border-zinc-300 px-2.5 py-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-zinc-500">
-          Type
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as LearningType)}
-            className="rounded-sm border border-zinc-300 px-2.5 py-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-          >
+      <Panel className="p-4">
+        <form onSubmit={addItem} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <div className="flex-1">
+            <TextField
+              label="Course, Book, or Skill Name"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Next.js 16 Masterclass & System Design"
+            />
+          </div>
+          <SelectField label="Type" value={type} onChange={(e) => setType(e.target.value as LearningType)}>
             <option value="course">Course</option>
             <option value="book">Book</option>
             <option value="skill">Skill</option>
-          </select>
-        </label>
-        <button
-          type="submit"
-          className="cursor-pointer rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          + Add Resource
-        </button>
-      </form>
+          </SelectField>
+          <PrimaryButton type="submit">+ Add Resource</PrimaryButton>
+        </form>
+      </Panel>
 
-      {/* Search & Filter Toolbar */}
       <div className="flex flex-col gap-3 rounded-md border border-zinc-200 bg-zinc-50/70 p-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1">
           <input
@@ -301,7 +520,7 @@ export default function LearningPage({
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value as any)}
+            onChange={(e) => setFilterType(e.target.value as "all" | LearningType)}
             className="rounded-sm border border-zinc-300 bg-white px-2 py-1 outline-none"
           >
             <option value="all">All Types</option>
@@ -312,7 +531,7 @@ export default function LearningPage({
 
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as any)}
+            onChange={(e) => setFilterStatus(e.target.value as "all" | LearningStatus)}
             className="rounded-sm border border-zinc-300 bg-white px-2 py-1 outline-none"
           >
             <option value="all">All Statuses</option>
@@ -324,290 +543,49 @@ export default function LearningPage({
       </div>
 
       {filteredItems.length === 0 && (
-        <div className="rounded-md border border-dashed border-zinc-300 bg-white p-8 text-center text-sm text-zinc-400">
-          No learning items found. Add a course, book, or skill above to get started.
-        </div>
+        <EmptyState>No learning items found. Add a course, book, or skill above to get started.</EmptyState>
       )}
 
-      {/* Cards Grid */}
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {filteredItems.map((item) => {
           const itemFiles = files.filter((f) => f.learning_item_id === item.id);
           const vLinks = item.video_links || [];
           const chapters = item.chapters || [];
-          const currentTab: CardTab = activeTabs[item.id] || "chapters";
 
           return (
-            <div key={item.id} className="rounded-lg border border-zinc-300 bg-white p-5 shadow-2xs">
-              {/* Header */}
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <TypeIcon type={item.type} />
-                  <h2 className="text-base font-bold text-zinc-900">{item.title}</h2>
-                  <select
-                    value={item.status}
-                    onChange={(e) => updateItem(item.id, { status: e.target.value as LearningStatus })}
-                    className={`cursor-pointer rounded-full px-2.5 py-0.5 text-xs font-semibold border-0 outline-none ${STATUS_COLOR[item.status]}`}
-                  >
-                    <option value="planned">Planned</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="done">Done</option>
-                  </select>
+            <Panel key={item.id} className="p-0">
+              <button onClick={() => openItem(item.id)} className="w-full cursor-pointer p-4 text-left">
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <TypeIcon type={item.type} />
+                    <h2 className="text-sm font-bold text-zinc-900">{item.title}</h2>
+                  </div>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_COLOR[item.status]}`}>
+                    {STATUS_LABEL[item.status]}
+                  </span>
                 </div>
-                <button
-                  onClick={() => removeItem(item.id)}
-                  aria-label={`Remove ${item.title}`}
-                  className="cursor-pointer text-zinc-400 hover:text-red-500"
-                >
-                  ✕
-                </button>
+
+                <div className="mb-2 h-2 w-full overflow-hidden rounded-full bg-zinc-100">
+                  <div className="h-full rounded-full bg-indigo-600 transition-all" style={{ width: `${item.progress}%` }} />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-500">
+                  <span className="flex items-center gap-1">
+                    <IconBook className="h-3 w-3" /> {chapters.length} chapters
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <IconVideo className="h-3 w-3" /> {vLinks.length} videos
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <IconFile className="h-3 w-3" /> {itemFiles.length} files
+                  </span>
+                  <span className="ml-auto font-medium text-zinc-700">{item.progress}%</span>
+                </div>
+              </button>
+              <div className="flex justify-end border-t border-zinc-100 px-4 py-1.5">
+                <IconRemoveButton onClick={() => removeItem(item.id)} label={`Remove ${item.title}`} />
               </div>
-
-              {/* Progress Bar */}
-              <div className="mb-4">
-                <div className="mb-1 flex items-center justify-between text-xs text-zinc-500">
-                  <span>Course Progress</span>
-                  <div className="flex items-center gap-2 font-medium text-zinc-700">
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={item.progress}
-                      onChange={(e) => updateItem(item.id, { progress: Number(e.target.value) })}
-                      className="w-24 cursor-pointer"
-                    />
-                    <span>{item.progress}%</span>
-                  </div>
-                </div>
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-100">
-                  <div
-                    className="h-full rounded-full bg-indigo-600 transition-all duration-300"
-                    style={{ width: `${item.progress}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Sub Tabs Navigation */}
-              <div className="mb-4 flex border-b border-zinc-200">
-                <button
-                  onClick={() => setActiveTabs({ ...activeTabs, [item.id]: "chapters" })}
-                  className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-semibold cursor-pointer ${
-                    currentTab === "chapters"
-                      ? "border-indigo-600 text-indigo-700"
-                      : "border-transparent text-zinc-500 hover:text-zinc-800"
-                  }`}
-                >
-                  📖 Chapters & Notes ({chapters.length})
-                </button>
-
-                <button
-                  onClick={() => setActiveTabs({ ...activeTabs, [item.id]: "videos" })}
-                  className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-semibold cursor-pointer ${
-                    currentTab === "videos"
-                      ? "border-indigo-600 text-indigo-700"
-                      : "border-transparent text-zinc-500 hover:text-zinc-800"
-                  }`}
-                >
-                  📺 Videos & Links ({vLinks.length})
-                </button>
-
-                <button
-                  onClick={() => setActiveTabs({ ...activeTabs, [item.id]: "files" })}
-                  className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-semibold cursor-pointer ${
-                    currentTab === "files"
-                      ? "border-indigo-600 text-indigo-700"
-                      : "border-transparent text-zinc-500 hover:text-zinc-800"
-                  }`}
-                >
-                  📄 PDFs & Resources ({itemFiles.length})
-                </button>
-
-                <button
-                  onClick={() => setActiveTabs({ ...activeTabs, [item.id]: "overview" })}
-                  className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-semibold cursor-pointer ${
-                    currentTab === "overview"
-                      ? "border-indigo-600 text-indigo-700"
-                      : "border-transparent text-zinc-500 hover:text-zinc-800"
-                  }`}
-                >
-                  📝 Overview Notes
-                </button>
-              </div>
-
-              {/* TAB 1: CHAPTERS & NOTES */}
-              {currentTab === "chapters" && (
-                <div className="space-y-4">
-                  {chapters.length === 0 && (
-                    <p className="text-xs text-zinc-400">No chapters added yet. Add chapter topics below to track notes and completion.</p>
-                  )}
-
-                  <div className="space-y-3">
-                    {chapters.map((chap) => (
-                      <div
-                        key={chap.id}
-                        className={`rounded-md border p-3 ${
-                          chap.completed ? "border-emerald-200 bg-emerald-50/30" : "border-zinc-200 bg-zinc-50/50"
-                        }`}
-                      >
-                        <div className="mb-2 flex items-center justify-between gap-2">
-                          <label className="flex items-center gap-2 font-semibold text-xs text-zinc-800 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={chap.completed}
-                              onChange={(e) => updateChapter(item, chap.id, { completed: e.target.checked })}
-                              className="h-4 w-4 rounded-xs text-indigo-600 cursor-pointer"
-                            />
-                            <span className={chap.completed ? "line-through text-zinc-400" : ""}>{chap.title}</span>
-                          </label>
-                          <button
-                            onClick={() => removeChapter(item, chap.id)}
-                            className="text-zinc-400 hover:text-red-500 text-xs"
-                          >
-                            ✕
-                          </button>
-                        </div>
-
-                        <NotesField
-                          value={chap.notes}
-                          placeholder={`Notes for ${chap.title}...`}
-                          onSave={(notes) => updateChapter(item, chap.id, { notes })}
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Add Chapter Form */}
-                  <div className="flex items-center gap-2 pt-2">
-                    <input
-                      value={newChapterTitle[item.id] || ""}
-                      onChange={(e) => setNewChapterTitle({ ...newChapterTitle, [item.id]: e.target.value })}
-                      placeholder="e.g. Chapter 1: System Architecture"
-                      className="flex-1 rounded-sm border border-zinc-300 px-2.5 py-1 text-xs outline-none focus:border-indigo-500"
-                    />
-                    <button
-                      onClick={() => addChapter(item)}
-                      className="cursor-pointer rounded-md bg-zinc-900 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-800"
-                    >
-                      + Add Chapter
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 2: VIDEOS & LINKS */}
-              {currentTab === "videos" && (
-                <div className="space-y-4">
-                  {vLinks.length === 0 && (
-                    <p className="text-xs text-zinc-400">No video links added yet. Add YouTube, Vimeo, or documentation links below.</p>
-                  )}
-
-                  <div className="space-y-2">
-                    {vLinks.map((v) => (
-                      <div key={v.id} className="flex items-center justify-between rounded-md border border-zinc-200 bg-zinc-50 p-2.5 text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-zinc-800">{v.title}:</span>
-                          <a
-                            href={v.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 font-medium text-indigo-700 hover:underline"
-                          >
-                            {v.url}
-                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                          </a>
-                        </div>
-                        <button onClick={() => removeVideoLink(item, v.id)} className="text-zinc-400 hover:text-red-500">
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Add Video Form */}
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 pt-2">
-                    <input
-                      value={newVideoTitle[item.id] || ""}
-                      onChange={(e) => setNewVideoTitle({ ...newVideoTitle, [item.id]: e.target.value })}
-                      placeholder="Video Title (e.g. Lecture 1)"
-                      className="rounded-sm border border-zinc-300 px-2.5 py-1 text-xs outline-none focus:border-indigo-500"
-                    />
-                    <input
-                      value={newVideoUrl[item.id] || ""}
-                      onChange={(e) => setNewVideoUrl({ ...newVideoUrl, [item.id]: e.target.value })}
-                      placeholder="URL (e.g. https://youtube.com/...)"
-                      className="rounded-sm border border-zinc-300 px-2.5 py-1 text-xs outline-none focus:border-indigo-500"
-                    />
-                    <button
-                      onClick={() => addVideoLink(item)}
-                      className="cursor-pointer rounded-md bg-zinc-900 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-800"
-                    >
-                      + Add Video Link
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 3: PDFS & FILES */}
-              {currentTab === "files" && (
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    {itemFiles.map((f) => (
-                      <div
-                        key={f.id}
-                        className="flex items-center justify-between rounded-sm border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs"
-                      >
-                        <a
-                          href={fileUrl(f.storage_path)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-indigo-700 hover:underline font-medium"
-                        >
-                          <svg className="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                          </svg>
-                          {f.file_name}
-                        </a>
-                        <button
-                          onClick={() => removeFile(f)}
-                          aria-label={`Remove ${f.file_name}`}
-                          className="cursor-pointer text-zinc-400 hover:text-red-500"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-dashed border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-600 hover:border-indigo-400 hover:text-indigo-700">
-                    {uploadingId === item.id ? "Uploading PDF…" : "+ Attach PDF Document"}
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      className="hidden"
-                      disabled={uploadingId === item.id}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) uploadFile(item.id, file);
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                </div>
-              )}
-
-              {/* TAB 4: OVERVIEW NOTES */}
-              {currentTab === "overview" && (
-                <div className="space-y-2">
-                  <NotesField
-                    value={item.notes}
-                    placeholder="High-level course overview, key takeaways, or general reflections..."
-                    onSave={(notes) => updateItem(item.id, { notes })}
-                  />
-                </div>
-              )}
-            </div>
+            </Panel>
           );
         })}
       </div>
