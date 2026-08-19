@@ -246,6 +246,7 @@ export default function Home() {
             tags: t.tags ?? [],
             subtasks: t.subtasks ?? [],
             category: t.category ?? "Personal",
+            position: t.position ?? new Date(t.created_at).getTime(),
           })),
         );
       }

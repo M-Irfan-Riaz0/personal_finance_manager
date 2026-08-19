@@ -30,12 +30,14 @@ create table if not exists public.todos (
   due_date date,
   tags text[] not null default '{}',
   subtasks jsonb not null default '[]', -- [{ id, text, done }]
+  position double precision not null default extract(epoch from now()), -- manual drag order
   created_at timestamptz not null default now()
 );
 
 alter table public.todos add column if not exists tags text[] not null default '{}';
 alter table public.todos add column if not exists subtasks jsonb not null default '[]';
 alter table public.todos add column if not exists category text not null default 'Personal';
+alter table public.todos add column if not exists position double precision not null default extract(epoch from now());
 
 alter table public.todos enable row level security;
 

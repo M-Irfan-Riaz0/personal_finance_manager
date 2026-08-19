@@ -57,7 +57,7 @@ function IconPencil({ className = "h-4 w-4" }: { className?: string }) {
 
 const PRIORITY_RANK: Record<TodoPriority, number> = { High: 0, Medium: 1, Low: 2 };
 
-type SortBy = "due" | "priority" | "newest";
+type SortBy = "due" | "priority" | "newest" | "manual";
 
 function newId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Math.random());
@@ -85,6 +85,7 @@ export default function TodosPage({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<TodoStatus | null>(null);
+  const [dragOverCardId, setDragOverCardId] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
@@ -110,7 +111,13 @@ export default function TodosPage({
       const row = data as Todo;
       onTodosChange([
         ...todos,
-        { ...row, tags: row.tags ?? [], subtasks: row.subtasks ?? [], category: row.category ?? "Personal" },
+        {
+          ...row,
+          tags: row.tags ?? [],
+          subtasks: row.subtasks ?? [],
+          category: row.category ?? "Personal",
+          position: row.position ?? new Date(row.created_at).getTime(),
+        },
       ]);
       setTitle("");
       setPriority("Medium");
@@ -122,13 +129,30 @@ export default function TodosPage({
   async function updateTodo(id: string, patch: Partial<Todo>) {
     onTodosChange(todos.map((t) => (t.id === id ? { ...t, ...patch } : t)));
     const supabase = createClient();
-    await supabase.from("todos").update(patch).eq("id", id);
+    const { error } = await supabase.from("todos").update(patch).eq("id", id);
+    if (error && "position" in patch) {
+      // Fallback for databases where the `position` migration hasn't been run yet.
+      const { position: _position, ...rest } = patch;
+      await supabase.from("todos").update(rest).eq("id", id);
+    }
   }
 
   async function deleteTodo(id: string) {
     onTodosChange(todos.filter((t) => t.id !== id));
     const supabase = createClient();
     await supabase.from("todos").delete().eq("id", id);
+  }
+
+  function reorderTodo(draggedTodoId: string, targetTodo: Todo) {
+    if (draggedTodoId === targetTodo.id) return;
+    const columnItems = [...todos]
+      .filter((t) => t.status === targetTodo.status && t.id !== draggedTodoId)
+      .sort((a, b) => a.position - b.position || a.created_at.localeCompare(b.created_at));
+    const targetIndex = columnItems.findIndex((t) => t.id === targetTodo.id);
+    if (targetIndex === -1) return;
+    const prevPosition = targetIndex > 0 ? columnItems[targetIndex - 1].position : targetTodo.position - 1000;
+    const newPosition = (prevPosition + targetTodo.position) / 2;
+    updateTodo(draggedTodoId, { status: targetTodo.status, position: newPosition });
   }
 
   const filtered = useMemo(() => {
@@ -144,6 +168,7 @@ export default function TodosPage({
     return [...items].sort((a, b) => {
       if (sortBy === "due") return (a.due_date ?? "9999-99-99").localeCompare(b.due_date ?? "9999-99-99");
       if (sortBy === "priority") return PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
+      if (sortBy === "manual") return a.position - b.position || a.created_at.localeCompare(b.created_at);
       return b.created_at.localeCompare(a.created_at);
     });
   }
@@ -243,6 +268,7 @@ export default function TodosPage({
                   <option value="due">Due date</option>
                   <option value="priority">Priority</option>
                   <option value="newest">Newest first</option>
+                  <option value="manual">Manual (drag to reorder)</option>
                 </SelectField>
                 <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-600">
                   <input
@@ -325,10 +351,28 @@ export default function TodosPage({
                       onDragEnd={() => {
                         setDraggedId(null);
                         setDragOverStatus(null);
+                        setDragOverCardId(null);
                       }}
-                      className={`cursor-grab overflow-hidden rounded-lg border border-zinc-300 bg-white shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing ${
-                        draggedId === t.id ? "opacity-40" : ""
-                      }`}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDragOverStatus(col.status);
+                        setDragOverCardId(t.id);
+                      }}
+                      onDragLeave={() => setDragOverCardId((id) => (id === t.id ? null : id))}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (draggedId) reorderTodo(draggedId, t);
+                        setDraggedId(null);
+                        setDragOverStatus(null);
+                        setDragOverCardId(null);
+                      }}
+                      className={`cursor-grab overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing ${
+                        dragOverCardId === t.id && draggedId !== t.id
+                          ? "border-indigo-400 ring-2 ring-indigo-300"
+                          : "border-zinc-300"
+                      } ${draggedId === t.id ? "opacity-40" : ""}`}
                     >
                       <div className="p-4">
                         <div className="mb-1.5 flex items-start justify-between gap-2">

@@ -15,6 +15,7 @@ export type Todo = {
   due_date: string | null; // ISO date, YYYY-MM-DD
   tags: string[];
   subtasks: Subtask[];
+  position: number; // manual drag order within a column, ascending
   created_at: string;
 };
 
