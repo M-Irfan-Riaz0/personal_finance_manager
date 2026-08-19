@@ -1,6 +1,19 @@
 export type LearningType = "course" | "book" | "skill";
 export type LearningStatus = "planned" | "in_progress" | "done";
 
+export type VideoLink = {
+  id: string;
+  title: string;
+  url: string;
+};
+
+export type ChapterNote = {
+  id: string;
+  title: string;
+  notes: string;
+  completed: boolean;
+};
+
 export type LearningItem = {
   id: string;
   title: string;
@@ -9,6 +22,8 @@ export type LearningItem = {
   progress: number; // 0-100
   notes: string;
   link: string;
+  video_links?: VideoLink[];
+  chapters?: ChapterNote[];
   created_at: string;
 };
 

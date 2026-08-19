@@ -82,8 +82,13 @@ create table if not exists public.learning_items (
   progress int not null default 0, -- 0-100
   notes text not null default '',
   link text not null default '',
+  video_links jsonb not null default '[]',
+  chapters jsonb not null default '[]',
   created_at timestamptz not null default now()
 );
+
+alter table public.learning_items add column if not exists video_links jsonb not null default '[]';
+alter table public.learning_items add column if not exists chapters jsonb not null default '[]';
 
 alter table public.learning_items enable row level security;
 
