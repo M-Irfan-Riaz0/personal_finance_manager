@@ -26,6 +26,7 @@ create table if not exists public.todos (
   notes text not null default '',
   status text not null default 'todo', -- todo | doing | done
   priority text not null default 'Medium', -- Low | Medium | High
+  category text not null default 'Personal', -- Work | Learning | Personal | Other
   due_date date,
   tags text[] not null default '{}',
   subtasks jsonb not null default '[]', -- [{ id, text, done }]
@@ -34,6 +35,7 @@ create table if not exists public.todos (
 
 alter table public.todos add column if not exists tags text[] not null default '{}';
 alter table public.todos add column if not exists subtasks jsonb not null default '[]';
+alter table public.todos add column if not exists category text not null default 'Personal';
 
 alter table public.todos enable row level security;
 

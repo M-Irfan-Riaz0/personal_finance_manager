@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Personal Budget Overview",
-  description: "Personal budget tracker built with Next.js and Supabase",
+  title: "Personal Hub",
+  description: "Personal finance, productivity, and learning hub built with Next.js and Supabase",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

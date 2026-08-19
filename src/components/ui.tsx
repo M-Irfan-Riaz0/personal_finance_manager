@@ -13,12 +13,12 @@
 export function Panel({
   children,
   className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+  ...props
+}: { children: React.ReactNode; className?: string } & React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={`rounded-md border border-zinc-300 bg-white shadow-2xs ${className}`}>{children}</div>
+    <div className={`rounded-md border border-zinc-300 bg-white shadow-2xs ${className}`} {...props}>
+      {children}
+    </div>
   );
 }
 

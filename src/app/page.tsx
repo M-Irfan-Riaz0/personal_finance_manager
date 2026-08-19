@@ -240,7 +240,14 @@ export default function Home() {
     (async () => {
       const { data: rows } = await supabase.from("todos").select("*").order("created_at", { ascending: true });
       if (rows) {
-        setTodos((rows as Todo[]).map((t) => ({ ...t, tags: t.tags ?? [], subtasks: t.subtasks ?? [] })));
+        setTodos(
+          (rows as Todo[]).map((t) => ({
+            ...t,
+            tags: t.tags ?? [],
+            subtasks: t.subtasks ?? [],
+            category: t.category ?? "Personal",
+          })),
+        );
       }
     })();
 

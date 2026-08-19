@@ -1,6 +1,9 @@
 export type TodoStatus = "todo" | "doing" | "done";
 export type TodoPriority = "Low" | "Medium" | "High";
+export type TodoCategory = "Work" | "Learning" | "Personal" | "Other";
 export type Subtask = { id: string; text: string; done: boolean };
+
+export const TODO_CATEGORIES: TodoCategory[] = ["Work", "Learning", "Personal", "Other"];
 
 export type Todo = {
   id: string;
@@ -8,6 +11,7 @@ export type Todo = {
   notes: string;
   status: TodoStatus;
   priority: TodoPriority;
+  category: TodoCategory;
   due_date: string | null; // ISO date, YYYY-MM-DD
   tags: string[];
   subtasks: Subtask[];

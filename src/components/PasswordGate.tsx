@@ -88,7 +88,7 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
           onSubmit={handleSubmit}
           className="w-full max-w-xs rounded-md border border-zinc-300 bg-white p-6 shadow-2xs"
         >
-          <h1 className="mb-1 text-lg font-bold text-zinc-900">Personal Budget</h1>
+          <h1 className="mb-1 text-lg font-bold text-zinc-900">Personal Hub</h1>
           <p className="mb-4 text-sm text-zinc-500">Enter the password to continue.</p>
           <input
             type="password"
