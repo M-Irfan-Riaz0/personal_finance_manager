@@ -19,7 +19,7 @@ function Th({
   align = "left",
   className = "",
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   align?: "left" | "right";
   className?: string;
 }) {
@@ -172,6 +172,7 @@ export default function BudgetSheet({
                   <Th align="right" className="w-24 sm:w-28">Owed</Th>
                   <Th align="right" className="w-24 sm:w-28">Received</Th>
                   <Th align="right" className="w-28 sm:w-32">Remaining</Th>
+                  <Th className="w-10" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -189,6 +190,18 @@ export default function BudgetSheet({
                     <Td className="w-28 sm:w-32">
                       <Computed value={p.owed - p.received}>{fmtPKR(p.owed - p.received)}</Computed>
                     </Td>
+                    <Td className="w-10 text-center">
+                      {p.received < p.owed && (
+                        <button
+                          onClick={() => updatePerson(i, { received: p.owed })}
+                          title="Mark full amount as returned"
+                          aria-label={`Mark ${p.name || "person"}'s money as returned`}
+                          className="cursor-pointer text-base leading-none hover:scale-110 transition-transform"
+                        >
+                          🤝
+                        </button>
+                      )}
+                    </Td>
                   </tr>
                 ))}
                 <tr className="border-t border-zinc-200 bg-zinc-50 font-medium">
@@ -198,6 +211,7 @@ export default function BudgetSheet({
                   <Td className="w-28 sm:w-32">
                     <Computed value={t.peopleTotalRemaining}>{fmtPKR(t.peopleTotalRemaining)}</Computed>
                   </Td>
+                  <Td className="w-10" />
                 </tr>
               </tbody>
             </table>

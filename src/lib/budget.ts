@@ -101,8 +101,45 @@ export function expensesTotal(expenses: Expense[]) {
   return expenses.reduce((s, e) => s + e.amount, 0);
 }
 
-function monthKey(date: Date) {
+export function monthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+/** "2026-08" -> "August 2026" */
+export function monthLabel(key: string) {
+  const [y, m] = key.split("-").map(Number);
+  return `${MONTH_NAMES[m - 1]} ${y}`;
+}
+
+/** "2026-08" -> "2026-09" */
+export function nextMonthKey(key: string) {
+  const [y, m] = key.split("-").map(Number);
+  const d = new Date(y, m, 1); // m is already 1-indexed here, so this rolls to next month
+  return monthKey(d);
+}
+
+/** "2026-08" -> Date for the last day of that month */
+export function lastDayOfMonthKey(key: string) {
+  const [y, m] = key.split("-").map(Number);
+  return new Date(y, m, 0);
+}
+
+/** Build a fresh month's data, carrying forward balances/recurring settings from the previous month. */
+export function createNextMonthData(prev: BudgetData, prevTotals: ReturnType<typeof computeTotals>, newKey: string): BudgetData {
+  return {
+    month: monthLabel(newKey),
+    accounts: prevTotals.accountsComputed.map((a) => ({ name: a.name, starting: a.current, current: a.current })),
+    people: prev.people.map((p) => ({ ...p })),
+    categories: prev.categories.map((c) => ({ name: c.name, actual: 0 })),
+    plan: { ...prev.plan, incomeReceived: 0 },
+    expenses: [],
+    futureExpenses: (prev.futureExpenses ?? []).map((f) => ({ ...f })),
+  };
 }
 
 export function computeTotals(data: BudgetData, today: Date) {
